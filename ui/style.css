@@ -1,0 +1,132 @@
+/* Zeres Launcher: estilo Minecraft (texturas del propio juego via --variables) con la distribucion de un launcher. */
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { width: 1000px; height: 620px; overflow: hidden; background: #000; }
+body { font-family: "Segoe UI", system-ui, sans-serif; color: #fff; user-select: none; -webkit-user-select: none; cursor: default; }
+canvas, img { image-rendering: pixelated; }
+button { font: inherit; color: inherit; background: none; border: 0; cursor: pointer; }
+
+.win { width: 1000px; height: 620px; display: grid; grid-template-rows: 30px 1fr; background: #000; }
+
+/* ---------------------------------------------------------------- barra de titulo */
+.bar { display: flex; align-items: center; gap: 8px; padding-left: 10px; background: #101010; border-bottom: 2px solid #000; }
+.bar-logo { height: 16px; }
+.bar .sp { flex: 1; align-self: stretch; }
+.beta { margin-left: 2px; }
+.wb { width: 44px; height: 30px; display: grid; place-items: center; }
+.wb:hover { background: #ffffff1c; }
+.wb.x:hover { background: #c42b1c; }
+
+/* ---------------------------------------------------------------- fondo: panoramica 3D */
+.body { position: relative; overflow: hidden; }
+.pano { position: absolute; inset: 0; perspective: 500px; overflow: hidden; transition: filter .25s; }
+.pano.blur { filter: blur(6px) brightness(.72); }
+.cube { position: absolute; left: 50%; top: 50%; transform-style: preserve-3d; }
+.face { position: absolute; width: 1004px; height: 1004px; left: -502px; top: -502px; background-size: cover; backface-visibility: hidden; image-rendering: auto; }
+.shade { position: absolute; inset: 0; pointer-events: none;
+         background: radial-gradient(ellipse at 55% 40%, transparent 50%, #0007 100%), linear-gradient(#0000 62%, #000c 100%); }
+
+/* ---------------------------------------------------------------- texto de Minecraft */
+.t { display: inline-block; line-height: 0; }
+.t canvas { display: block; }
+
+/* ---------------------------------------------------------------- widgets de Minecraft (nine-slice) */
+.mcbtn { position: relative; height: 40px; display: inline-flex; align-items: center; justify-content: center;
+         border-image: var(--btn) 3 fill / 6px stretch; image-rendering: pixelated; }
+.mcbtn:hover { border-image-source: var(--btn-hi); }
+.mcbtn.off, .mcbtn:disabled { border-image-source: var(--btn-off); cursor: default; }
+.mcbtn.sq { width: 48px; height: 48px; }
+.mcbtn.w400 { width: 400px; } .mcbtn.w196 { width: 180px; } .mcbtn.w300 { width: 300px; }
+.slider { position: relative; height: 40px; border-image: var(--slider) 3 fill / 6px stretch; image-rendering: pixelated; cursor: pointer; }
+.slider:hover { border-image-source: var(--slider-hi); }
+.slider .handle { position: absolute; top: 0; width: 16px; height: 40px; background: var(--handle) 0 0 / 16px 40px; image-rendering: pixelated; }
+.slider:hover .handle { background-image: var(--handle-hi); }
+.slider .lbl { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; pointer-events: none; }
+.tabs { position: absolute; left: 0; right: 0; bottom: 0; display: flex; justify-content: center; }
+.tab { height: 48px; width: 220px; display: flex; align-items: center; justify-content: center; cursor: pointer;
+       border-image: var(--tab) 2 2 0 2 fill / 4px 4px 0 4px stretch; image-rendering: pixelated; }
+.tab:hover { border-image-source: var(--tab-hi); }
+.tab.on { border-image-source: var(--tab-sel); }
+.tab.on:hover { border-image-source: var(--tab-sel-hi); }
+.chk { display: flex; align-items: center; gap: 8px; cursor: pointer; height: 40px; }
+.chk i { width: 40px; height: 40px; background: var(--chk) 0 0 / 40px 40px; image-rendering: pixelated; flex: none; }
+.chk:hover i { background-image: var(--chk-hi); }
+.chk.on i { background-image: var(--chk-on); }
+.chk.on:hover i { background-image: var(--chk-on-hi); }
+.field { position: relative; display: flex; align-items: center; height: 40px; width: 400px; padding: 0 8px; cursor: text;
+         border-image: var(--field) 1 fill / 2px stretch; image-rendering: pixelated; }
+.field.focus { border-image-source: var(--field-hi); }
+.field input { position: absolute; inset: 0; opacity: 0; cursor: text; }
+
+/* ---------------------------------------------------------------- barra lateral */
+.side { position: absolute; left: 0; top: 0; bottom: 0; width: 84px; z-index: 3; display: flex; flex-direction: column; align-items: center;
+        gap: 12px; padding: 14px 0 14px; background: #000000a8; border-right: 2px solid #000; box-shadow: inset -2px 0 0 #ffffff10; }
+.side .sp { flex: 1; }
+.inst { width: 56px; height: 56px; position: relative; cursor: pointer; background: #00000080; box-shadow: inset 0 0 0 2px #373737, inset 2px 2px 0 2px #1e1e1e; }
+.inst .ico { width: 48px; height: 48px; margin: 4px; display: block; }
+.inst:hover { box-shadow: inset 0 0 0 2px #a0a0a0; }
+.inst.on { box-shadow: inset 0 0 0 2px #fff, inset 0 0 0 4px #000; }
+.inst .mark { position: absolute; left: -14px; top: 18px; width: 6px; height: 20px; background: #fff; display: none; box-shadow: 2px 2px 0 #000; }
+.inst.on .mark { display: block; }
+.side .mcbtn canvas { width: 24px; height: 24px; }
+.tip { position: absolute; z-index: 9; display: none; padding: 6px 8px 4px; pointer-events: none; background: #100010f0;
+       box-shadow: inset 0 0 0 2px #100010f0, inset 0 0 0 4px #5000ff50; }
+
+/* ---------------------------------------------------------------- vistas */
+.view { position: absolute; left: 84px; right: 0; top: 0; bottom: 0; display: none; z-index: 2; }
+.view.on { display: block; }
+
+/* inicio */
+.news { position: absolute; left: 18px; top: 14px; }
+.logo-box { position: absolute; left: 50%; top: 58px; transform: translateX(-50%); width: 729px; text-align: center; }
+.logo { width: 729px; height: 96px; display: block; filter: drop-shadow(0 6px 0 #0008); }
+.ribbon { display: inline-flex; align-items: center; justify-content: center; margin-top: 10px; padding: 6px 14px 4px; background: #000c; box-shadow: inset 0 0 0 2px #ffffff22; }
+.splash { position: absolute; right: -6px; top: 70px; transform: rotate(-18deg); animation: splash .45s ease-in-out infinite alternate; cursor: pointer; }
+@keyframes splash { from { transform: rotate(-18deg) scale(1); } to { transform: rotate(-18deg) scale(1.08); } }
+
+.server { position: absolute; left: 50%; top: 262px; transform: translateX(-50%); width: 620px; height: 72px; padding: 4px; display: flex; gap: 6px;
+          background: #00000090; outline: 2px solid #ffffff30; outline-offset: -2px; }
+.server canvas { width: 64px; height: 64px; flex: none; }
+.srv-txt { display: flex; flex-direction: column; gap: 2px; padding-top: 3px; }
+.srv-right { position: absolute; right: 8px; top: 7px; display: flex; gap: 6px; align-items: flex-start; }
+.pingbar { width: 20px; height: 16px; background-size: 20px 16px; image-rendering: pixelated; }
+
+.dock { position: absolute; left: 0; right: 0; bottom: 0; height: 104px; display: grid; grid-template-columns: 1fr 420px; align-items: end;
+        gap: 18px; padding: 0 22px 22px; }
+.dock-info { display: flex; flex-direction: column; gap: 6px; padding-bottom: 6px; }
+.dock-play { display: flex; flex-direction: column; gap: 8px; align-items: stretch; }
+.status { align-self: center; min-height: 18px; }
+.prog { height: 8px; border: 2px solid #fff; padding: 1px; display: none; }
+.prog.on { display: block; }
+.prog i { display: block; height: 100%; width: 0; background: #fff; transition: width .15s; }
+.play { width: 100%; height: 52px; }
+.corner { position: absolute; left: 6px; bottom: 4px; }
+
+/* menus (ajustes, perfil, cuentas) como los del juego */
+.menu { display: none; grid-template-rows: 66px 1fr 66px; }
+.menu.on { display: grid; }
+.m-head { position: relative; display: flex; align-items: center; justify-content: center; background: var(--head-sep) bottom left / 64px 4px repeat-x; }
+.m-list { position: relative; overflow: hidden; background: var(--list-bg) 0 0 / 32px 32px; image-rendering: pixelated; }
+.m-foot { display: flex; align-items: center; justify-content: center; gap: 8px; flex-wrap: wrap; background: var(--foot-sep) top left / 64px 4px repeat-x; }
+.opt-grid { position: absolute; left: 50%; top: 20px; transform: translateX(-50%); width: 616px; display: grid; grid-template-columns: 304px 304px;
+            gap: 8px; }
+.opt-grid .wide { grid-column: span 2; }
+.opt-grid .mcbtn { width: 100%; }
+.opt-grid .note { grid-column: span 2; display: flex; justify-content: center; padding-top: 6px; }
+.skin { position: absolute; left: 60px; top: 28px; width: 160px; height: 320px; }
+.skin-name { position: absolute; left: 140px; top: 360px; transform: translateX(-50%); }
+.acc-list { position: absolute; left: 290px; top: 20px; width: 590px; display: flex; flex-direction: column; gap: 4px; }
+.acc { position: relative; height: 72px; padding: 4px; display: flex; gap: 6px; cursor: pointer; background: #0000005a; }
+.acc.sel { outline: 2px solid #fff; outline-offset: -2px; box-shadow: inset 0 0 0 4px #000; }
+.acc canvas { width: 64px; height: 64px; }
+.acc .txt { display: flex; flex-direction: column; gap: 2px; padding-top: 3px; }
+.form { position: absolute; left: 50%; top: 40px; transform: translateX(-50%); width: 400px; display: flex; flex-direction: column; gap: 10px; }
+.form.center { align-items: center; text-align: center; width: 640px; top: 60px; gap: 18px; }
+
+/* primer arranque */
+.boot { position: absolute; inset: 0; z-index: 20; display: none; flex-direction: column; align-items: center; justify-content: center; gap: 16px; background: #0c0c0c; }
+.boot.on { display: flex; }
+.boot img { width: 486px; height: 64px; }
+.boot p { font-size: 15px; color: #ddd; }
+.boot small { color: #777; font-size: 12px; }
+.boot-bar { width: 400px; height: 10px; border: 2px solid #fff; padding: 1px; }
+.boot-bar i { display: block; height: 100%; width: 0; background: #fff; }

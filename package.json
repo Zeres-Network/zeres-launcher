@@ -1,0 +1,12 @@
+{
+  "name": "zeres-launcher",
+  "private": true,
+  "version": "0.1.0",
+  "scripts": {
+    "build": "tauri build",
+    "dev-ui": "python dev/serve.py 8770"
+  },
+  "devDependencies": {
+    "@tauri-apps/cli": "^2"
+  }
+}

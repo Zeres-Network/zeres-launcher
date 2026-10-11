@@ -1,0 +1,131 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Zeres Launcher</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="win">
+  <!-- barra de titulo propia (se arrastra) -->
+  <header class="bar" data-tauri-drag-region>
+    <img src="img/zeres_network.png" class="bar-logo" alt="" data-tauri-drag-region>
+    <span class="t" id="barTitle" data-tauri-drag-region></span>
+    <span class="beta" id="barBeta" data-tauri-drag-region></span>
+    <span class="sp" data-tauri-drag-region></span>
+    <button class="wb" id="wMin" title="Minimizar"><span class="t" id="wMinT"></span></button>
+    <button class="wb x" id="wClose" title="Cerrar"><span class="t" id="wCloseT"></span></button>
+  </header>
+
+  <div class="body">
+    <div class="pano" id="pano"><div class="cube" id="cube"></div></div>
+    <div class="shade"></div>
+
+    <!-- barra lateral: las dos instancias, ajustes y cuenta -->
+    <nav class="side">
+      <div class="inst" data-inst="zeres"><canvas width="16" height="16" class="ico"></canvas><i class="mark"></i></div>
+      <div class="inst" data-inst="cobblemon"><canvas width="16" height="16" class="ico"></canvas><i class="mark"></i></div>
+      <span class="sp"></span>
+      <button class="mcbtn sq" id="bSettings" title="Ajustes"><canvas width="10" height="10" id="gearIco"></canvas></button>
+      <button class="mcbtn sq" id="bProfile" title="Perfil"><canvas width="8" height="8" id="headIco"></canvas></button>
+    </nav>
+    <div class="tip" id="tip"></div>
+
+    <!-- ============================================================ INICIO -->
+    <main class="view on" id="v-home">
+      <span class="t news" id="news"></span>
+      <div class="logo-box">
+        <img src="img/zeres_network.png" class="logo" alt="Zeres Network">
+        <div class="ribbon"><span class="t" id="ribbon"></span></div>
+        <span class="t splash" id="splash"></span>
+      </div>
+
+      <div class="server" id="server">
+        <canvas width="64" height="64" id="favicon"></canvas>
+        <div class="srv-txt"><span class="t" id="srvName"></span><span class="t" id="srvMotd1"></span><span class="t" id="srvMotd2"></span></div>
+        <div class="srv-right"><span class="t" id="srvPlayers"></span><i class="pingbar" id="pingbar"></i></div>
+      </div>
+
+      <footer class="dock">
+        <div class="dock-info">
+          <span class="t" id="instName"></span>
+          <span class="t" id="instInfo"></span>
+        </div>
+        <div class="dock-play">
+          <div class="prog" id="prog"><i id="progBar"></i></div>
+          <span class="t status" id="status"></span>
+          <button class="mcbtn play" id="play"><span class="t" id="playT"></span></button>
+        </div>
+      </footer>
+    </main>
+
+    <!-- ============================================================ AJUSTES -->
+    <section class="view menu" id="v-settings">
+      <div class="m-head"><div class="tabs" id="tabs"></div></div>
+      <div class="m-list" id="setList"></div>
+      <div class="m-foot"><button class="mcbtn w400" data-home><span class="t" data-t="Hecho"></span></button></div>
+    </section>
+
+    <!-- ============================================================ PERFIL -->
+    <section class="view menu" id="v-profile">
+      <div class="m-head"><span class="t" data-t="Perfil"></span></div>
+      <div class="m-list">
+        <canvas id="skin" width="16" height="32" class="skin"></canvas>
+        <span class="t skin-name" id="skinName"></span>
+        <div class="acc-list" id="accList"></div>
+      </div>
+      <div class="m-foot">
+        <button class="mcbtn w196" id="pMs" style="width:200px"><span class="t" data-t="Añadir Microsoft"></span></button>
+        <button class="mcbtn w196" id="pOff" style="width:200px"><span class="t" data-t="Añadir sin premium"></span></button>
+        <button class="mcbtn w196" id="pDel" style="width:200px"><span class="t" data-t="Quitar"></span></button>
+        <button class="mcbtn w196" data-home><span class="t" data-t="Hecho"></span></button>
+      </div>
+    </section>
+
+    <!-- ============================================================ AÑADIR SIN PREMIUM -->
+    <section class="view menu" id="v-add">
+      <div class="m-head"><span class="t" data-t="Añadir cuenta sin premium"></span></div>
+      <div class="m-list">
+        <div class="form">
+          <span class="t" data-t="Nombre de usuario" data-c="7"></span>
+          <label class="field" id="nameField"><span class="t" id="nameTxt"></span><input id="nameInput" maxlength="16" spellcheck="false" autocomplete="off"></label>
+          <span class="t" id="nameErr" data-c="c"></span>
+          <span class="t" data-t="Al entrar en la network te pedirá tu contraseña" data-c="7"></span>
+          <span class="t" data-t="(o crearla la primera vez). Los premium entran directos." data-c="7"></span>
+        </div>
+      </div>
+      <div class="m-foot">
+        <button class="mcbtn w196" id="addOk"><span class="t" data-t="Añadir"></span></button>
+        <button class="mcbtn w196" data-goto="profile"><span class="t" data-t="Cancelar"></span></button>
+      </div>
+    </section>
+
+    <!-- ============================================================ MICROSOFT -->
+    <section class="view menu" id="v-ms">
+      <div class="m-head"><span class="t" data-t="Iniciar sesión con Microsoft"></span></div>
+      <div class="m-list">
+        <div class="form center">
+          <span class="t" id="msLine1" data-c="7"></span>
+          <span class="t big" id="msCode"></span>
+          <span class="t" id="msLine2" data-c="7"></span>
+        </div>
+      </div>
+      <div class="m-foot">
+        <button class="mcbtn w196" id="msOpen"><span class="t" data-t="Abrir la web"></span></button>
+        <button class="mcbtn w196" data-goto="profile"><span class="t" data-t="Cancelar"></span></button>
+      </div>
+    </section>
+
+    <!-- ============================================================ PRIMER ARRANQUE (sin texturas aun) -->
+    <section class="boot" id="boot">
+      <img src="img/zeres_network.png" alt="">
+      <p id="bootText">Preparando el launcher...</p>
+      <div class="boot-bar"><i id="bootBar"></i></div>
+      <small>La primera vez se descargan los recursos de Minecraft.</small>
+    </section>
+  </div>
+</div>
+<script src="mcfont.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
