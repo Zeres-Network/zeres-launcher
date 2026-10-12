@@ -32,7 +32,24 @@ async fn read_varint(s: &mut TcpStream) -> Result<i32> {
     Err(anyhow!("VarInt demasiado largo"))
 }
 
+/// Como hace Minecraft: si no se da puerto, mira el registro SRV `_minecraft._tcp.<host>` (p. ej.
+/// zerescobblemon.holy.gg -> de04.holy.gg:19556). Si no hay SRV, se queda host:puerto.
+pub async fn resolve(host: &str, port: u16) -> (String, u16) {
+    if port != 25565 {
+        return (host.to_string(), port);
+    }
+    let lookup = async {
+        let resolver = hickory_resolver::TokioAsyncResolver::tokio_from_system_conf().ok()?;
+        let srv = resolver.srv_lookup(format!("_minecraft._tcp.{host}.")).await.ok()?;
+        let rec = srv.iter().min_by_key(|r| (r.priority(), u16::MAX - r.weight()))?;
+        Some((rec.target().to_utf8().trim_end_matches('.').to_string(), rec.port()))
+    };
+    tokio::time::timeout(Duration::from_secs(3), lookup).await.ok().flatten().unwrap_or((host.to_string(), port))
+}
+
 pub async fn status(host: &str, port: u16) -> Result<(Value, u64)> {
+    let (host, port) = resolve(host, port).await;
+    let host = host.as_str();
     let start = Instant::now();
     let mut s = tokio::time::timeout(Duration::from_secs(4), TcpStream::connect((host, port))).await??;
     let mut hs = Vec::new();

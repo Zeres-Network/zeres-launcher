@@ -13,7 +13,7 @@ window.ZRES_THEME = "/theme/";
   const handlers = {
     get_state: () => ({ settings, version: "0.1.0", theme_ready: true, ms_available: false }),
     instances: () => ({ instances: Object.values(inst), news: [{ tag: "LAUNCHER", title: "Beta 0.1.0", text: "Primera versión del launcher de Zeres Network." }] }),
-    server_status: () => ({ online: true, ping: 48, host: "mc.zeres.fun", status: { description: { text: "", extra: [{ text: "Zeres Network ", color: "gold", bold: true }, { text: "- Survival, SkyBlock y Cobblemon\n", color: "gray" }, { text: "¡Temporada 1 de ranked abierta!", color: "yellow" }] }, players: { online: 57, max: 200 } } }),
+    server_status: () => ({ online: true, ping: 48, host: "zerescobblemon.holy.gg", status: { description: { text: "", extra: [{ text: "Zeres Network ", color: "gold", bold: true }, { text: "- Survival, SkyBlock y Cobblemon\n", color: "gray" }, { text: "¡Temporada 1 de ranked abierta!", color: "yellow" }] }, players: { online: 57, max: 200 } } }),
     save_settings: ({ patch }) => (settings = { ...settings, ...patch }),
     add_offline: ({ name }) => { if (!/^[A-Za-z0-9_]{3,16}$/.test(name)) throw "El nombre tiene que tener entre 3 y 16 letras, números o _"; const uuid = (name + "00000000000000000000000000000000").slice(0, 32); settings.accounts.push({ kind: "offline", name, uuid }); settings.active = uuid; return settings; },
     remove_account: ({ uuid }) => { settings.accounts = settings.accounts.filter(a => a.uuid !== uuid); return settings; },

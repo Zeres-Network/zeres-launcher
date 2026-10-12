@@ -19,7 +19,7 @@ use tauri_plugin_updater::UpdaterExt;
 
 /// Las dos instancias del launcher (mismo servidor, distinto cliente).
 const INSTANCES: &[&str] = &["zeres", "cobblemon"];
-const DEFAULT_HOST: &str = "mc.zeres.fun";
+const DEFAULT_HOST: &str = "zerescobblemon.holy.gg";
 
 struct App {
     settings: Mutex<Settings>,
@@ -358,6 +358,12 @@ fn selftest(id: &str, launch_game: bool) {
         let s = Settings::load();
         let m = modpack::manifest(&s.manifest_url).await?;
         let entry = m["instances"][id].clone();
+        let (host, port) = server_of(Some(&m));
+        let (rh, rp) = ping::resolve(&host, port).await;
+        match ping::status(&host, port).await {
+            Ok((v, ms)) => line(format!("PING {host} -> {rh}:{rp} OK {ms} ms, jugadores {}/{}", v["players"]["online"], v["players"]["max"])),
+            Err(e) => line(format!("PING {host} -> {rh}:{rp} FALLO: {e}")),
+        }
         let l2 = line.clone();
         let progress: launch::Progress = Arc::new(move |stage, text, d, t| {
             if t == 0 || d == t || d % 200 == 0 {
