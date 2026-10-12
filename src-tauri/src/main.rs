@@ -252,9 +252,8 @@ async fn run_play(handle: &AppHandle, app: &Arc<App>, id: &str, repair: bool, la
         st.save();
         s = st.clone();
     }
-    let (host, port) = server_of(Some(&manifest));
-    let server = if port == 25565 { host } else { format!("{host}:{port}") };
-    let mut cmd = launch::command(id, &prep, &acc, &s, Some(&server));
+    // el juego se abre en la portada (la de ZeresClient en Cobblemon); se entra al servidor desde alli con "Jugar"
+    let mut cmd = launch::command(id, &prep, &acc, &s, None);
     let log_dir = launch::instance_dir(id).join("logs");
     std::fs::create_dir_all(&log_dir)?;
     let log = std::fs::File::create(log_dir.join("zeres-launcher.log"))?;
