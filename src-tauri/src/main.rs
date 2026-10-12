@@ -15,6 +15,7 @@ use settings::Settings;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Mutex};
 use tauri::{AppHandle, Emitter, Manager, State};
+use tauri_plugin_updater::UpdaterExt;
 
 /// Las dos instancias del launcher (mismo servidor, distinto cliente).
 const INSTANCES: &[&str] = &["zeres", "cobblemon"];
@@ -284,6 +285,36 @@ async fn run_play(handle: &AppHandle, app: &Arc<App>, id: &str, repair: bool, la
     Ok(())
 }
 
+/// ¿Hay una version nueva del launcher en GitHub? (latest.json del ultimo release, firmado)
+#[tauri::command]
+async fn check_update(handle: AppHandle) -> Result<Value, String> {
+    let updater = handle.updater().map_err(err)?;
+    match updater.check().await {
+        Ok(Some(u)) => Ok(json!({"available": true, "version": u.version, "notes": u.body})),
+        Ok(None) => Ok(json!({"available": false})),
+        Err(e) => Ok(json!({"available": false, "error": e.to_string()})),
+    }
+}
+
+/// Descarga la version nueva (comprobando la firma), la instala y reabre el launcher.
+#[tauri::command]
+async fn install_update(handle: AppHandle) -> Result<(), String> {
+    let update = handle.updater().map_err(err)?.check().await.map_err(err)?.ok_or("No hay ninguna versión nueva")?;
+    let h = handle.clone();
+    let mut done: usize = 0;
+    update
+        .download_and_install(
+            move |chunk, total| {
+                done += chunk;
+                let _ = h.emit("update-progress", json!({"done": done, "total": total}));
+            },
+            || {},
+        )
+        .await
+        .map_err(err)?;
+    handle.restart();
+}
+
 #[tauri::command]
 fn open_folder(id: Option<String>) -> Result<(), String> {
     let dir = match id {
@@ -361,9 +392,12 @@ fn main() {
         selftest(args.get(i + 1).map(String::as_str).unwrap_or("zeres"), args.iter().any(|a| a == "--launch"));
         return;
     }
+    // prueba del actualizador sin interfaz: busca version nueva, la descarga y comprueba la firma (no instala)
+    let check_only = args.iter().any(|a| a == "--check-update");
     let state = Arc::new(App { settings: Mutex::new(Settings::load()), busy: AtomicBool::new(false), manifest: Mutex::new(None) });
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
+        .plugin(tauri_plugin_updater::Builder::new().build())
         .manage(state)
         // zres://theme/... -> <datos>/theme/... (texturas sacadas del Minecraft del jugador)
         .register_uri_scheme_protocol("zres", |_ctx, req| {
@@ -384,6 +418,30 @@ fn main() {
                 .body(body)
                 .unwrap()
         })
+        .setup(move |app| {
+            if check_only {
+                let h = app.handle().clone();
+                if let Some(w) = h.get_webview_window("main") {
+                    let _ = w.hide();
+                }
+                tauri::async_runtime::spawn(async move {
+                    let msg = match h.updater() {
+                        Ok(u) => match u.check().await {
+                            Ok(Some(up)) => match up.download(|_, _| {}, || {}).await {
+                                Ok(bytes) => format!("NUEVA {} -> {} descargada y firma OK ({} bytes)", up.current_version, up.version, bytes.len()),
+                                Err(e) => format!("NUEVA {} pero fallo la descarga/firma: {e}", up.version),
+                            },
+                            Ok(None) => format!("SIN NOVEDADES (actual {})", env!("CARGO_PKG_VERSION")),
+                            Err(e) => format!("ERROR al comprobar: {e}"),
+                        },
+                        Err(e) => format!("ERROR updater: {e}"),
+                    };
+                    let _ = std::fs::write(settings::base_dir().join("update-check.log"), msg);
+                    h.exit(0);
+                });
+            }
+            Ok(())
+        })
         .invoke_handler(tauri::generate_handler![
             get_state,
             prepare_theme,
@@ -396,7 +454,9 @@ fn main() {
             ms_login_start,
             play,
             open_folder,
-            open_url
+            open_url,
+            check_update,
+            install_update
         ])
         .run(tauri::generate_context!())
         .expect("error al arrancar el launcher");

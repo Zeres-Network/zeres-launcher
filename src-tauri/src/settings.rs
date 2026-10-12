@@ -9,9 +9,10 @@ pub fn base_dir() -> PathBuf {
     dirs::data_dir().unwrap_or_else(|| PathBuf::from(".")).join("ZeresLauncher")
 }
 
-/// Manifest de los modpacks. En la beta local apunta a la carpeta de pruebas; al publicar se cambia por la del repo
-/// `zeres-network-modpack` de GitHub (raw.githubusercontent.com/.../main/manifest.json).
-pub const DEFAULT_MANIFEST: &str = "file:///C:/Users/Administrator/Desktop/dev/zeres-network-modpack/manifest.json";
+/// Manifest de los modpacks: repo `zeres-network-modpack` de GitHub.
+pub const DEFAULT_MANIFEST: &str = "https://raw.githubusercontent.com/Zeres-Network/zeres-network-modpack/main/manifest.json";
+/// Origen de la beta local (antes de publicar): se cambia solo por el de GitHub.
+const OLD_LOCAL_MANIFEST: &str = "file:///C:/Users/Administrator/Desktop/dev/zeres-network-modpack/manifest.json";
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct Account {
@@ -86,10 +87,14 @@ impl Settings {
     }
 
     pub fn load() -> Settings {
-        std::fs::read_to_string(Self::path())
+        let mut s: Settings = std::fs::read_to_string(Self::path())
             .ok()
             .and_then(|s| serde_json::from_str(&s).ok())
-            .unwrap_or_default()
+            .unwrap_or_default();
+        if s.manifest_url.is_empty() || s.manifest_url == OLD_LOCAL_MANIFEST || s.manifest_url.contains("/Days16/") {
+            s.manifest_url = DEFAULT_MANIFEST.to_string();
+        }
+        s
     }
 
     pub fn save(&self) {

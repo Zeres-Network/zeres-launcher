@@ -29,10 +29,16 @@ npx tauri build          # instalador en src-tauri/target/release/bundle/nsis/
 ```
 Para ver la interfaz en un navegador sin compilar, con un simulador del núcleo: `python dev/serve.py 8770` (hace falta haber abierto el launcher una vez, para que exista `theme/`).
 
-Prueba sin interfaz: `zeres-launcher.exe --selftest cobblemon --launch` (resultado en `%APPDATA%\ZeresLauncher\selftest.log`).
+Pruebas sin interfaz: `zeres-launcher.exe --selftest cobblemon --launch` (resultado en `%APPDATA%\ZeresLauncher\selftest.log`) y `zeres-launcher.exe --check-update` (busca, descarga y comprueba la firma de la versión nueva sin instalarla; resultado en `update-check.log`).
 
 ## Antes de publicar
-- [ ] `settings.rs` → `DEFAULT_MANIFEST`: cambiar la carpeta local por la URL raw del repo `zeres-network-modpack`.
 - [ ] `auth.rs` → `MS_CLIENT_ID`: client ID de Azure aprobado por Mojang.
 - [ ] Panorámicas propias del spawn en `ui/img/panorama/<instancia>/panorama_0..5.png` (si existen, se usan en vez de las del juego).
-- [ ] Firma con SignPath y actualizaciones automáticas.
+- [ ] Firma del .exe con SignPath (el aviso de Windows).
+
+## Publicar una versión (autoactualización)
+1. Subir `version` en `src-tauri/tauri.conf.json` y en `src-tauri/Cargo.toml`.
+2. `python tools/release.py --notes "qué cambia"`: compila firmado, crea `latest.json` y el release `v<versión>` en GitHub.
+3. Al abrirse, los launchers ya instalados ven la versión nueva, la descargan, comprueban la firma, se instalan y se reinician.
+
+La clave privada de firma **no** está en el repo (`zeres-devtools/zeres-launcher-updater.key`). Si se pierde, los launchers instalados no podrán actualizarse solos: guárdala bien.

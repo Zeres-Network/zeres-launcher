@@ -273,12 +273,29 @@ function renderSettings() {
   });
   const ram = $("ram");
   if (ram) {
-    const set = async e => {
-      const r = ram.getBoundingClientRect(), k = Math.max(0, Math.min(1, (e.clientX - r.left) / r.width));
-      const gb = Math.round(1 + k * 15);
-      if (gb !== settings.ram[current]) { settings.ram[current] = gb; renderSettings(); await save({ ram: settings.ram }); }
+    // durante el arrastre solo se mueve la barra (sin redibujar la pantalla); se guarda al soltar
+    const rec = current === "cobblemon" ? 6 : 4;
+    const show = gb => {
+      ram.querySelector(".handle").style.left = (gb - 1) / 15 * (ram.clientWidth - 16) + "px";
+      T(ram.querySelector(".lbl .t"), "Memoria: " + gb + " GB" + (gb === rec ? " §7(recomendado)" : ""));
     };
-    ram.onmousedown = e => { set(e); const mv = ev => set(ev); addEventListener("mousemove", mv); addEventListener("mouseup", () => removeEventListener("mousemove", mv), { once: true }); };
+    const gbAt = e => { const r = ram.getBoundingClientRect(); return Math.round(1 + Math.max(0, Math.min(1, (e.clientX - r.left - 8) / (r.width - 16))) * 15); };
+    show(settings.ram[current] || 4);
+    ram.onmousedown = e => {
+      e.preventDefault();
+      let gb = gbAt(e); show(gb);
+      const mv = ev => { const g = gbAt(ev); if (g !== gb) { gb = g; show(gb); } };
+      const up = async () => {
+        removeEventListener("mousemove", mv); removeEventListener("mouseup", up);
+        settings.ram[current] = gb; await save({ ram: settings.ram });
+      };
+      addEventListener("mousemove", mv); addEventListener("mouseup", up);
+    };
+    ram.onwheel = async e => {
+      e.preventDefault();
+      const gb = Math.max(1, Math.min(16, (settings.ram[current] || 4) + (e.deltaY < 0 ? 1 : -1)));
+      settings.ram[current] = gb; show(gb); await save({ ram: settings.ram });
+    };
   }
   bindField("jvmField", "jvmInput", "jvmTxt", settings.jvm_args, 290, v => save({ jvm_args: v }));
   bindField("manField", "manInput", "manTxt", settings.manifest_url, 290, v => save({ manifest_url: v }));
@@ -374,7 +391,30 @@ function nameRender() { T("nameTxt", $("nameInput").value + (document.activeElem
 fields.push(() => { if ($("v-add").classList.contains("on")) nameRender(); });
 
 /* ================================================================== arranque */
+/* autoactualizacion: nada mas abrir, mira si hay version nueva en GitHub y se instala sola */
+async function selfUpdate() {
+  let info;
+  try { info = await invoke("check_update"); } catch (_) { return; }
+  if (!info || !info.available) return;
+  $("boot").classList.add("on");
+  $("bootText").textContent = "Actualizando el launcher a la versión " + info.version + "...";
+  $("bootBar").style.width = "5%";
+  await listen("update-progress", p => {
+    const pct = p.total ? Math.round(p.done / p.total * 100) : 50;
+    $("bootBar").style.width = pct + "%";
+    $("bootText").textContent = "Actualizando el launcher a la versión " + info.version + " (" + pct + "%)";
+  });
+  try {
+    await invoke("install_update"); // al terminar el launcher se reinicia solo
+  } catch (e) {
+    $("bootText").textContent = "No se pudo actualizar: " + e;
+    await new Promise(r => setTimeout(r, 2500));
+    $("boot").classList.remove("on");
+  }
+}
+
 async function boot() {
+  await selfUpdate();
   const st = await invoke("get_state");
   settings = st.settings; appVersion = st.version; msAvailable = st.ms_available;
   current = settings.last_instance in INST ? settings.last_instance : "zeres";

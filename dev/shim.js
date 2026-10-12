@@ -25,7 +25,7 @@ window.ZRES_THEME = "/theme/";
       inst[id].state = "ready"; inst[id].installed = inst[id].latest;
       emit("progress", { id, stage: "running", text: "Minecraft abierto", done: 1, total: 1 });
     },
-    open_folder: () => null, open_url: () => null, prepare_theme: () => null
+    open_folder: () => null, open_url: () => null, prepare_theme: () => null, check_update: () => ({ available: false })
   };
   window.__TAURI__ = {
     core: { invoke: async (cmd, args) => { const h = handlers[cmd]; if (!h) throw "sin simulador para " + cmd; return JSON.parse(JSON.stringify(await h(args || {}))); } },
