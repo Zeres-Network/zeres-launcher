@@ -1,0 +1,52 @@
+# Compila el launcher en GitHub (Windows) al subir una etiqueta v*, lo firma con SignPath (cuando este aprobado)
+# y crea el release con el instalador y latest.json (autoactualizacion).
+# Mientras SignPath no este aprobado, este workflow solo se puede lanzar a mano (workflow_dispatch) para probar.
+name: release
+
+on:
+  workflow_dispatch:
+  # push:
+  #   tags: ["v*"]
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - name: Dependencias
+        run: npm ci
+
+      - name: Compilar (firma del actualizador)
+        env:
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ""
+        run: npx tauri build
+
+      - name: Guardar el instalador sin firmar
+        id: unsigned
+        uses: actions/upload-artifact@v4
+        with:
+          name: instalador
+          path: src-tauri/target/release/bundle/nsis/*-setup.exe
+
+      # --- Firma de codigo con SignPath Foundation (activar cuando aprueben el proyecto) -------------------------
+      # - name: Firmar con SignPath
+      #   uses: signpath/github-action-submit-signing-request@v1
+      #   with:
+      #     api-token: ${{ secrets.SIGNPATH_API_TOKEN }}
+      #     organization-id: "<organization-id de SignPath>"
+      #     project-slug: "zeres-launcher"
+      #     signing-policy-slug: "release-signing"
+      #     github-artifact-id: ${{ steps.unsigned.outputs.artifact-id }}
+      #     wait-for-completion: true
+      #     output-artifact-directory: signed

@@ -42,3 +42,13 @@ Pruebas sin interfaz: `zeres-launcher.exe --selftest cobblemon --launch` (result
 3. Al abrirse, los launchers ya instalados ven la versión nueva, la descargan, comprueban la firma, se instalan y se reinician.
 
 La clave privada de firma **no** está en el repo (`zeres-devtools/zeres-launcher-updater.key`). Si se pierde, los launchers instalados no podrán actualizarse solos: guárdala bien.
+
+## Política de firma de código
+- El instalador de Windows se firma gratis con [SignPath.io](https://about.signpath.io), con un certificado de
+  [SignPath Foundation](https://signpath.org) (en trámite).
+- Solo se firman versiones compiladas por GitHub Actions a partir de este repositorio público.
+- Equipo:
+  - **Autores y revisores:** [miembros de Zeres-Network](https://github.com/orgs/Zeres-Network/people).
+  - **Aprobador de las firmas:** el propietario de la organización (Days16).
+- **Privacidad:** el launcher no recoge datos. Solo se conecta a Mojang/Microsoft (juego y cuentas), a Fabric y
+  Modrinth (modpack), a GitHub (actualizaciones y modpacks) y al servidor de Zeres (estado del servidor).
