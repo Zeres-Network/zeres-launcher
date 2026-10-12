@@ -27,7 +27,7 @@ window.ZRES_THEME = "/theme/";
       setTimeout(() => emit("game-ready", { id }), 2500);
     },
     open_folder: () => null, open_url: () => null, prepare_theme: () => null, check_update: () => ({ available: false }),
-    whats_new: () => ({ show: true, from: "0.1.3", to: "0.1.5", releases: [{ version: "0.1.5", notes: ["- Contador de horas jugadas en cada instancia.", "- Pantalla de novedades al actualizar.", "- Ya no se abren dos Minecraft si pulsas Jugar dos veces."].join("\n") }] })
+    whats_new: ({ all }) => ({ show: true, from: "0.1.3", to: "0.1.5", releases: [{ version: "0.1.5", notes: ["- Contador de horas jugadas en cada instancia.", "- Pantalla de novedades al actualizar.", "- Ya no se abren dos Minecraft si pulsas Jugar dos veces."].join("\n") }] })
   };
   window.__TAURI__ = {
     core: { invoke: async (cmd, args) => { const h = handlers[cmd]; if (!h) throw "sin simulador para " + cmd; const r = await h(args || {}); return r === undefined ? null : JSON.parse(JSON.stringify(r)); } },

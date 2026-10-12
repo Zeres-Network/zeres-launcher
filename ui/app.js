@@ -79,6 +79,15 @@ function drawGear(cv) {
     g.fillRect(x, y, 1, 1);
   }
 }
+/** Hoja de novedades (16x16): papel con lineas y una estrella amarilla. */
+const NEWS = [
+  "..oooooooooo....", "..o########oo...", "..o#llll###o#o..", "..o########oooo.", "..o#llllll#####o", "..o############o",
+  "..o#lllllllll##o", "..o############o", "..o#llllllll###o", "..o#######s####o", "..o#llll#sss###o", "..o#####sssss##o",
+  "..o#######sss##o", "..o#######s#s##o", "..o############o", "..oooooooooooooo"];
+function drawNewsIcon(cv) {
+  const g = cv.getContext("2d"); g.clearRect(0, 0, 16, 16);
+  pixels(g, NEWS, { o: "#262728", "#": "#e8e8e8", l: "#8d8d90", s: "#ffcf3a" });
+}
 /** Triangulo de "play" pixelado (9x9). */
 const PLAY = ["##.......", "####.....", "######...", "########.", "#########", "########.", "######...", "####.....", "##......."];
 function drawPlayIcon(cv, color) {
@@ -109,6 +118,7 @@ async function drawIcons() {
     }
   }
   drawGear($("gearIco"));
+  drawNewsIcon($("newsIco"));
 }
 async function skinOf(acc) {
   if (acc && acc.skin_url) { try { return await img(acc.skin_url); } catch (_) { } }
@@ -274,7 +284,15 @@ function showNews(title, sub, items, ok) {
   T("nwTitle", title, { s: 3 });
   T("nwSub", sub);
   const list = $("nwList"); list.innerHTML = "";
+  let first = true;
   for (const it of items) {
+    if (it && typeof it === "object" && it.h) {
+      const sp = document.createElement("span"); sp.className = "t"; if (!first) sp.style.marginTop = "8px"; list.appendChild(sp);
+      T(sp, "§e§l" + it.h);
+      first = false;
+      continue;
+    }
+    first = false;
     wrapMC(it, 214).forEach((l, i) => {
       const sp = document.createElement("span"); sp.className = "t"; list.appendChild(sp);
       T(sp, (i === 0 ? "§a» §f" : "   §f") + l);
@@ -282,6 +300,25 @@ function showNews(title, sub, items, ok) {
   }
   T("nwOkT", ok || "§lVALE");
   $("v-news").classList.add("on");
+}
+/** Boton "Novedades": las ultimas versiones del launcher y lo nuevo del modpack de la instancia elegida. */
+async function openNews() {
+  const items = [];
+  const inst = instances[current];
+  if (inst && Array.isArray(inst.notes) && inst.notes.length) {
+    items.push({ h: INST[current].name + " " + (inst.latest || "") });
+    inst.notes.forEach(n => items.push(n));
+  }
+  try {
+    const r = await invoke("whats_new", { all: true });
+    for (const rel of (r && r.releases) || []) {
+      const notes = notesToItems(rel.notes);
+      items.push({ h: "Zeres Launcher " + rel.version });
+      (notes.length ? notes : ["Mejoras y correcciones."]).forEach(n => items.push(n));
+    }
+  } catch (_) { }
+  if (!items.length) items.push("No se han podido cargar las novedades (¿sin internet?).");
+  showNews("§6§lNOVEDADES", "§7Lo último de Zeres", items, "§lVALE");
 }
 /** Notas de un release de GitHub (markdown sencillo) -> lineas. */
 function notesToItems(md) {
@@ -579,13 +616,14 @@ async function boot() {
 
   // novedades: si el launcher se acaba de actualizar, se ensena lo nuevo de cada version
   $("nwOk").onclick = () => $("v-news").classList.remove("on");
-  invoke("whats_new").then(r => {
+  invoke("whats_new", { all: false }).then(r => {
     if (!r || !r.show) return;
     const items = [];
     (r.releases || []).forEach(rel => notesToItems(rel.notes).forEach(n => items.push(n)));
     if (!items.length) items.push("Mejoras y correcciones.");
-    showNews("§6§l¡NOVEDADES!", "§7Zeres Launcher §f" + r.from + " §7» §a" + r.to, items, "§l¡VAMOS!");
+    showNews("§6§l¡NOVEDADES!", r.from ? "§7Zeres Launcher §f" + r.from + " §7» §a" + r.to : "§7Zeres Launcher §a" + r.to, items, "§l¡VAMOS!");
   }).catch(() => { });
+  $("bNews").onclick = () => openNews();
 
   // eventos
   $("wMin").onclick = () => appWindow.minimize();

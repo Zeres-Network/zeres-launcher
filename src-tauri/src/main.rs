@@ -320,30 +320,41 @@ async fn run_play(handle: &AppHandle, app: &Arc<App>, id: &str, repair: bool, la
     Ok(())
 }
 
-/// Novedades del launcher: si se ha actualizado desde la ultima vez, las notas de las versiones nuevas (de GitHub).
+/// Novedades del launcher (notas de los releases de GitHub).
+/// - Sin `all`: solo si el launcher se ha actualizado desde la ultima vez (si no se sabe la version anterior, se ensena
+///   la actual). Marca la version como vista.
+/// - Con `all`: las ultimas versiones, para el boton "Novedades".
 #[tauri::command]
-async fn whats_new(app: St<'_>) -> Result<Value, String> {
+async fn whats_new(app: St<'_>, all: Option<bool>) -> Result<Value, String> {
+    let all = all.unwrap_or(false);
     let current = env!("CARGO_PKG_VERSION").to_string();
     let last = snapshot(&app).last_seen_version;
-    {
+    if !all {
         let mut s = app.settings.lock().unwrap();
         s.last_seen_version = current.clone();
         s.save();
     }
-    if last.is_empty() || last == current {
+    if !all && last == current {
         return Ok(json!({"show": false}));
     }
     let ver = |v: &str| v.trim_start_matches('v').split('.').map(|p| p.parse::<u32>().unwrap_or(0)).collect::<Vec<_>>();
-    let (from, to) = (ver(&last), ver(&current));
+    let to = ver(&current);
+    let from = if all || last.is_empty() { None } else { Some(ver(&last)) };
     let list = net::get_json("https://api.github.com/repos/Zeres-Network/zeres-launcher/releases?per_page=30").await.unwrap_or(Value::Null);
     let mut out = Vec::new();
     for r in list.as_array().into_iter().flatten() {
         let tag = r["tag_name"].as_str().unwrap_or_default();
         let v = ver(tag);
-        if v > from && v <= to {
+        let wanted = match &from {
+            Some(f) => v > *f && v <= to,
+            None if all => v <= to,
+            None => v == to,
+        };
+        if wanted {
             out.push(json!({"version": tag.trim_start_matches('v'), "date": r["published_at"], "notes": r["body"]}));
         }
     }
+    out.truncate(if all { 6 } else { 10 });
     Ok(json!({"show": true, "from": last, "to": current, "releases": out}))
 }
 
