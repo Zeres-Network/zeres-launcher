@@ -4,6 +4,10 @@ El código del launcher ya está hecho (`src-tauri/src/auth.rs`): inicio de sesi
 Xbox Live → Minecraft. Solo falta el **ID de la aplicación de Azure** y que **Mojang la apruebe**. Es gratis.
 
 ## 1. Registrar la aplicación en Azure (5 minutos)
+0. **Si tu cuenta es personal (Outlook, Hotmail, Xbox) y es la primera vez que usas Azure**, al entrar en el portal
+   sale el error *"Selected user account does not exist in tenant 'Microsoft Services'..."*. Antes hay que crear tu
+   directorio gratis en <https://azure.microsoft.com/free> → **Comienza gratis**. Pide teléfono y tarjeta solo para
+   verificar; no cobra nada, y registrar aplicaciones es gratis. Cuando termine, ya puedes seguir con el paso 1.
 1. Entra en <https://portal.azure.com> con una cuenta de Microsoft. Vale cualquiera; mejor una del equipo de Zeres.
 2. Busca **"Microsoft Entra ID"** → **Registros de aplicaciones** → **Nuevo registro**:
    - **Nombre:** `Zeres Launcher`.
