@@ -586,6 +586,7 @@ async function boot() {
   const st = await invoke("get_state");
   settings = st.settings; appVersion = st.version; msAvailable = st.ms_available;
   (st.running || []).forEach(id => running.add(id));
+  const cantSave = st.can_save === false;
   current = settings.last_instance in INST ? settings.last_instance : "zeres";
   if (!st.theme_ready) {
     $("boot").classList.add("on");
@@ -610,7 +611,7 @@ async function boot() {
   await setPano();
   requestAnimationFrame(spin);
   renderHome();
-  refreshInstances(false);
+  refreshInstances(false).then(() => { if (cantSave) T("status", "§cNo se pueden guardar los ajustes (save-error.log)"); });
   refreshServer();
   setInterval(refreshServer, 30000);
 

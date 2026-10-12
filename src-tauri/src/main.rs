@@ -62,10 +62,12 @@ fn server_of(m: Option<&Value>) -> (String, u16) {
 #[tauri::command]
 fn get_state(app: St) -> Value {
     let s = snapshot(&app);
+    let can_save = s.save();
     json!({
         "settings": s.public(),
         "version": env!("CARGO_PKG_VERSION"),
         "theme_ready": theme::ready(),
+        "can_save": can_save,
         "running": app.running.lock().unwrap().iter().cloned().collect::<Vec<_>>(),
         "ms_available": !auth::MS_CLIENT_ID.is_empty(),
         "data_dir": settings::base_dir(),

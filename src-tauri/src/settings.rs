@@ -103,12 +103,26 @@ impl Settings {
         s
     }
 
-    pub fn save(&self) {
+    /// Guarda los ajustes. Primero en un temporal y renombrando (para no dejar el archivo a medias); si eso falla,
+    /// escribe directamente. Si tampoco puede, deja el motivo en `save-error.log` y devuelve false.
+    pub fn save(&self) -> bool {
         let _ = std::fs::create_dir_all(base_dir());
-        if let Ok(s) = serde_json::to_string_pretty(self) {
-            let tmp = Self::path().with_extension("json.tmp");
-            if std::fs::write(&tmp, s).is_ok() {
-                let _ = std::fs::rename(tmp, Self::path());
+        let Ok(json) = serde_json::to_string_pretty(self) else { return false };
+        let path = Self::path();
+        let tmp = path.with_extension("json.tmp");
+        let first = std::fs::write(&tmp, &json).and_then(|_| std::fs::rename(&tmp, &path));
+        if first.is_ok() {
+            return true;
+        }
+        let _ = std::fs::remove_file(&tmp);
+        match std::fs::write(&path, &json) {
+            Ok(_) => true,
+            Err(e2) => {
+                let _ = std::fs::write(
+                    base_dir().join("save-error.log"),
+                    format!("{}: no se pudo guardar {} ({:?} / {e2})", crate::auth::now(), path.display(), first.err()),
+                );
+                false
             }
         }
     }

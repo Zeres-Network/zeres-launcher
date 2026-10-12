@@ -42,14 +42,31 @@ pub async fn resolve(host: &str, port: u16) -> (String, u16) {
     use hickory_resolver::config::{ResolverConfig, ResolverOpts};
     use hickory_resolver::TokioAsyncResolver;
     let name = format!("_minecraft._tcp.{host}.");
+    // 1) DNS del sistema y de Cloudflare
     let resolvers = [
         TokioAsyncResolver::tokio_from_system_conf().ok(),
         Some(TokioAsyncResolver::tokio(ResolverConfig::cloudflare(), ResolverOpts::default())),
     ];
     for r in resolvers.into_iter().flatten() {
-        if let Ok(Ok(srv)) = tokio::time::timeout(Duration::from_secs(3), r.srv_lookup(name.clone())).await {
+        if let Ok(Ok(srv)) = tokio::time::timeout(Duration::from_secs(2), r.srv_lookup(name.clone())).await {
             if let Some(rec) = srv.iter().min_by_key(|r| (r.priority(), u16::MAX - r.weight())) {
                 return (rec.target().to_utf8().trim_end_matches('.').to_string(), rec.port());
+            }
+        }
+    }
+    // 2) DNS por HTTPS (funciona aunque el DNS normal este bloqueado o filtrado por una VPN)
+    for url in ["https://cloudflare-dns.com/dns-query", "https://dns.google/resolve"] {
+        let req = crate::net::client().get(url).query(&[("name", name.as_str()), ("type", "SRV")]).header("accept", "application/dns-json");
+        if let Ok(Ok(resp)) = tokio::time::timeout(Duration::from_secs(4), req.send()).await {
+            if let Ok(v) = resp.json::<Value>().await {
+                for a in v["Answer"].as_array().into_iter().flatten() {
+                    let parts: Vec<&str> = a["data"].as_str().unwrap_or_default().split_whitespace().collect();
+                    if a["type"].as_u64() == Some(33) && parts.len() == 4 {
+                        if let Ok(p) = parts[2].parse::<u16>() {
+                            return (parts[3].trim_end_matches('.').to_string(), p);
+                        }
+                    }
+                }
             }
         }
     }
