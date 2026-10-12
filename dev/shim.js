@@ -9,7 +9,7 @@ window.ZRES_THEME = "/theme/";
     accounts: [{ kind: "offline", name: "Days16", uuid: "a1b2c3d4e5f60718293a4b5c6d7e8f90" }], active: "a1b2c3d4e5f60718293a4b5c6d7e8f90" };
   const inst = { zeres: { id: "zeres", state: "install", installed: "", latest: "1.21.1", minecraft: "1.21.1", loader: "", optional: [], mods: 0 },
     cobblemon: { id: "cobblemon", state: "update", installed: "0.0.9", latest: "0.1.0", minecraft: "1.21.1", loader: "fabric 0.19.3",
-      optional: [["mods/xaerominimap-fabric-1.21.1-26.4.2.jar", "xaerominimap-fabric-1.21.1-26.4.2.jar"], ["mods/xaeroworldmap-fabric-1.21.1-1.44.2.jar", "xaeroworldmap-fabric-1.21.1-1.44.2.jar"]], mods: 45 } };
+      optional: [["mods/xaerominimap-fabric-1.21.1-26.4.2.jar", "xaerominimap-fabric-1.21.1-26.4.2.jar"], ["mods/xaeroworldmap-fabric-1.21.1-1.44.2.jar", "xaeroworldmap-fabric-1.21.1-1.44.2.jar"]], mods: 45, playtime: 45600, notes: ["Nueva portada de Zeres: pulsa Jugar y entras directo al servidor.", "Menú de pausa nuevo.", "La ventana del juego se llama Zeres Network y lleva el icono de Zeres."] } };
   const handlers = {
     get_state: () => ({ settings, version: "0.1.0", theme_ready: true, ms_available: false }),
     instances: () => ({ instances: Object.values(inst), news: [{ tag: "LAUNCHER", title: "Beta 0.1.0", text: "Primera versión del launcher de Zeres Network." }] }),
@@ -23,12 +23,14 @@ window.ZRES_THEME = "/theme/";
       const steps = [["pack", "Descargando mods", 45], ["game", "Descargando librerías", 70], ["assets", "Descargando recursos del juego", 120], ["java", "Descargando Java", 30]];
       for (const [stage, text, total] of steps) for (let d = 0; d <= total; d += Math.ceil(total / 12)) { emit("progress", { id, stage, text, done: Math.min(d, total), total }); await new Promise(r => setTimeout(r, 60)); }
       inst[id].state = "ready"; inst[id].installed = inst[id].latest;
-      emit("progress", { id, stage: "running", text: "Minecraft abierto", done: 1, total: 1 });
+      emit("progress", { id, stage: "starting", text: "Abriendo Minecraft... (puede tardar un poco)", done: 0, total: 0 });
+      setTimeout(() => emit("game-ready", { id }), 2500);
     },
-    open_folder: () => null, open_url: () => null, prepare_theme: () => null, check_update: () => ({ available: false })
+    open_folder: () => null, open_url: () => null, prepare_theme: () => null, check_update: () => ({ available: false }),
+    whats_new: () => ({ show: true, from: "0.1.3", to: "0.1.5", releases: [{ version: "0.1.5", notes: ["- Contador de horas jugadas en cada instancia.", "- Pantalla de novedades al actualizar.", "- Ya no se abren dos Minecraft si pulsas Jugar dos veces."].join("\n") }] })
   };
   window.__TAURI__ = {
-    core: { invoke: async (cmd, args) => { const h = handlers[cmd]; if (!h) throw "sin simulador para " + cmd; return JSON.parse(JSON.stringify(await h(args || {}))); } },
+    core: { invoke: async (cmd, args) => { const h = handlers[cmd]; if (!h) throw "sin simulador para " + cmd; const r = await h(args || {}); return r === undefined ? null : JSON.parse(JSON.stringify(r)); } },
     event: { listen: async (ev, fn) => { (listeners[ev] = listeners[ev] || []).push(fn); return () => { }; } },
     window: { getCurrentWindow: () => ({ minimize() { }, close() { } }) }
   };

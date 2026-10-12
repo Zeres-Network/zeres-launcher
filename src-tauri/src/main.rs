@@ -25,6 +25,8 @@ struct App {
     settings: Mutex<Settings>,
     busy: AtomicBool,
     manifest: Mutex<Option<Value>>,
+    /// instancias con el juego abierto (no se puede lanzar la misma dos veces)
+    running: Mutex<std::collections::HashSet<String>>,
 }
 
 type St<'a> = State<'a, Arc<App>>;
@@ -64,6 +66,7 @@ fn get_state(app: St) -> Value {
         "settings": s.public(),
         "version": env!("CARGO_PKG_VERSION"),
         "theme_ready": theme::ready(),
+        "running": app.running.lock().unwrap().iter().cloned().collect::<Vec<_>>(),
         "ms_available": !auth::MS_CLIENT_ID.is_empty(),
         "data_dir": settings::base_dir(),
     })
@@ -110,7 +113,8 @@ async fn instances(app: St<'_>, refresh: bool) -> Result<Value, String> {
         out.push(json!({
             "id": id, "state": state, "installed": installed, "latest": latest,
             "minecraft": if st.minecraft.is_empty() { entry["minecraft"].as_str().unwrap_or("1.21.1").to_string() } else { st.minecraft.clone() },
-            "loader": st.loader, "optional": st.optional, "mods": st.managed.iter().filter(|p| p.starts_with("mods/")).count(),
+            "loader": st.loader, "optional": st.optional, "notes": entry["notes"].clone(),
+            "playtime": app.settings.lock().unwrap().playtime.get(*id).copied().unwrap_or(0), "mods": st.managed.iter().filter(|p| p.starts_with("mods/")).count(),
         }));
     }
     Ok(json!({ "instances": out, "news": m.as_ref().ok().map(|m| m["news"].clone()).unwrap_or(Value::Null),
@@ -223,6 +227,9 @@ async fn run_play(handle: &AppHandle, app: &Arc<App>, id: &str, repair: bool, la
     let emit = |stage: &str, text: &str, d: usize, t: usize| {
         let _ = handle.emit("progress", json!({"id": id, "stage": stage, "text": text, "done": d, "total": t}));
     };
+    if app.running.lock().unwrap().contains(id) {
+        return Err(anyhow::anyhow!("Minecraft ya está abierto"));
+    }
     let mut s = snapshot(app);
     let acc = s.active_account().cloned().ok_or_else(|| anyhow::anyhow!("Añade una cuenta en Perfil antes de jugar"))?;
     emit("manifest", "Buscando actualizaciones", 0, 0);
@@ -256,35 +263,88 @@ async fn run_play(handle: &AppHandle, app: &Arc<App>, id: &str, repair: bool, la
     let mut cmd = launch::command(id, &prep, &acc, &s, None);
     let log_dir = launch::instance_dir(id).join("logs");
     std::fs::create_dir_all(&log_dir)?;
-    let log = std::fs::File::create(log_dir.join("zeres-launcher.log"))?;
+    let log_path = log_dir.join("zeres-launcher.log");
+    let log = std::fs::File::create(&log_path)?;
     cmd.stdout(log.try_clone()?).stderr(log);
     emit("launch", "Abriendo Minecraft", 0, 0);
     let mut child = cmd.spawn().map_err(|e| anyhow::anyhow!("No se pudo abrir Java: {e}"))?;
-    let window = handle.get_webview_window("main");
-    match s.close_mode {
-        1 => {
-            handle.exit(0);
-        }
-        0 => {
-            if let Some(w) = &window {
-                let _ = w.hide();
-            }
-        }
-        _ => {}
-    }
+    app.running.lock().unwrap().insert(id.to_string());
     let h = handle.clone();
     let idc = id.to_string();
+    let close_mode = s.close_mode;
+    let app2 = app.clone();
+    // vigila el juego: cuando su ventana esta lista se oculta el launcher; al cerrarse suma el tiempo jugado
     std::thread::spawn(move || {
-        let status = child.wait();
+        let started = std::time::Instant::now();
+        let mut ready = false;
+        let code = loop {
+            if let Ok(Some(status)) = child.try_wait() {
+                break status.code().unwrap_or(-1);
+            }
+            if !ready {
+                let log = std::fs::read(&log_path).unwrap_or_default();
+                let found = String::from_utf8_lossy(&log).contains("Sound engine started");
+                if found || started.elapsed().as_secs() > 180 {
+                    ready = true;
+                    let _ = h.emit("game-ready", json!({"id": idc}));
+                    match close_mode {
+                        1 => h.exit(0),
+                        0 => {
+                            if let Some(w) = h.get_webview_window("main") {
+                                let _ = w.hide();
+                            }
+                        }
+                        _ => {}
+                    }
+                }
+            }
+            std::thread::sleep(std::time::Duration::from_millis(500));
+        };
+        let played = started.elapsed().as_secs();
+        let total = {
+            let mut st = app2.settings.lock().unwrap();
+            let t = st.playtime.entry(idc.clone()).or_insert(0);
+            *t += played;
+            let t = *t;
+            st.save();
+            t
+        };
+        app2.running.lock().unwrap().remove(&idc);
         if let Some(w) = h.get_webview_window("main") {
             let _ = w.show();
             let _ = w.set_focus();
         }
-        let code = status.ok().and_then(|s| s.code()).unwrap_or(-1);
-        let _ = h.emit("game-exit", json!({"id": idc, "code": code}));
+        let _ = h.emit("game-exit", json!({"id": idc, "code": code, "played": played, "total": total}));
     });
-    emit("running", "Minecraft abierto", 1, 1);
+    emit("starting", "Abriendo Minecraft...", 0, 0);
     Ok(())
+}
+
+/// Novedades del launcher: si se ha actualizado desde la ultima vez, las notas de las versiones nuevas (de GitHub).
+#[tauri::command]
+async fn whats_new(app: St<'_>) -> Result<Value, String> {
+    let current = env!("CARGO_PKG_VERSION").to_string();
+    let last = snapshot(&app).last_seen_version;
+    {
+        let mut s = app.settings.lock().unwrap();
+        s.last_seen_version = current.clone();
+        s.save();
+    }
+    if last.is_empty() || last == current {
+        return Ok(json!({"show": false}));
+    }
+    let ver = |v: &str| v.trim_start_matches('v').split('.').map(|p| p.parse::<u32>().unwrap_or(0)).collect::<Vec<_>>();
+    let (from, to) = (ver(&last), ver(&current));
+    let list = net::get_json("https://api.github.com/repos/Zeres-Network/zeres-launcher/releases?per_page=30").await.unwrap_or(Value::Null);
+    let mut out = Vec::new();
+    for r in list.as_array().into_iter().flatten() {
+        let tag = r["tag_name"].as_str().unwrap_or_default();
+        let v = ver(tag);
+        if v > from && v <= to {
+            out.push(json!({"version": tag.trim_start_matches('v'), "date": r["published_at"], "notes": r["body"]}));
+        }
+    }
+    Ok(json!({"show": true, "from": last, "to": current, "releases": out}))
 }
 
 /// ¿Hay una version nueva del launcher en GitHub? (latest.json del ultimo release, firmado)
@@ -402,8 +462,21 @@ fn main() {
     }
     // prueba del actualizador sin interfaz: busca version nueva, la descarga y comprueba la firma (no instala)
     let check_only = args.iter().any(|a| a == "--check-update");
-    let state = Arc::new(App { settings: Mutex::new(Settings::load()), busy: AtomicBool::new(false), manifest: Mutex::new(None) });
+    let state = Arc::new(App {
+        settings: Mutex::new(Settings::load()),
+        busy: AtomicBool::new(false),
+        manifest: Mutex::new(None),
+        running: Mutex::new(Default::default()),
+    });
     tauri::Builder::default()
+        // un solo launcher: si ya hay uno abierto, se muestra ese en vez de abrir otro
+        .plugin(tauri_plugin_single_instance::init(|app, _args, _cwd| {
+            if let Some(w) = app.get_webview_window("main") {
+                let _ = w.show();
+                let _ = w.unminimize();
+                let _ = w.set_focus();
+            }
+        }))
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_updater::Builder::new().build())
         .manage(state)
@@ -464,7 +537,8 @@ fn main() {
             open_folder,
             open_url,
             check_update,
-            install_update
+            install_update,
+            whats_new
         ])
         .run(tauri::generate_context!())
         .expect("error al arrancar el launcher");

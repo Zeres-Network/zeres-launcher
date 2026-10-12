@@ -17,6 +17,7 @@ const SPLASHES = ["¡Beta!", "¡100% casero!", "¡Hazte con todos!", "¡Código 
 let settings = null, appVersion = "0.1.0", msAvailable = false;
 let instances = {}, news = null, server = null;
 let current = "zeres", busy = false, splashI = 0, tab = 0, selAcc = null;
+const running = new Set(), starting = new Set();
 
 /* ================================================================== utilidades */
 function T(el, text, opt) { MC.set(typeof el === "string" ? $(el) : el, text, opt); }
@@ -132,6 +133,10 @@ async function drawBody(cv, acc) {
 }
 
 /* ================================================================== inicio */
+function fmtTime(sec) {
+  const h = Math.floor(sec / 3600), m = Math.floor(sec % 3600 / 60);
+  return h > 0 ? `${h} h ${m} min` : `${m} min`;
+}
 function instInfo(id) {
   const i = instances[id] || {};
   const mc = "§7Minecraft " + (i.minecraft || "1.21.1");
@@ -142,6 +147,8 @@ function instInfo(id) {
 function playState() {
   const i = instances[current];
   if (busy) return ["§lPREPARANDO", "busy"];
+  if (starting.has(current)) return ["§lABRIENDO...", "off"];
+  if (running.has(current)) return ["§lEN JUEGO", "off"];
   if (!i) return ["§lJUGAR", "play"];
   if (i.state === "install") return ["§lINSTALAR", "upd"];
   if (i.state === "update") return ["§lACTUALIZAR", "upd"];
@@ -154,6 +161,7 @@ async function renderHome() {
   T("splash", SPLASHES[splashI], { c: "e" });
   T("instName", "§l" + INST[current].name);
   T("instInfo", instInfo(current));
+  T("instTime", "§7Tiempo jugado: §f" + fmtTime(instances[current]?.playtime || 0));
   const [label, mode] = playState();
   T("playT", label, { s: 3 });
   const pb = $("play");
@@ -217,10 +225,16 @@ async function selectInstance(id) {
 async function play(repair = false, launch = true) {
   if (busy) return;
   if (!activeAccount()) { go("profile"); T("status", "§eAñade una cuenta para jugar"); return; }
+  const id = current, before = instances[id] || {};
   busy = true; $("progBar").style.width = "0"; renderHome();
   try {
-    await invoke("play", { id: current, repair, launch });
+    await invoke("play", { id, repair, launch });
     if (!launch) T("status", "§aArchivos comprobados");
+    else starting.add(id);
+    // si acaba de instalar/actualizar el modpack, se ensenan sus novedades
+    if ((before.state === "update" || before.state === "install") && Array.isArray(before.notes) && before.notes.length) {
+      showNews("§6§l¡NOVEDADES!", "§7" + INST[id].name + " §8· §f" + (before.latest || ""), before.notes, "§l¡A JUGAR!");
+    }
   } catch (e) {
     T("status", "§c" + MC.fit(String(e), 205));
   }
@@ -231,12 +245,48 @@ listen("progress", p => {
   if (p.id !== current) return;
   $("progBar").style.width = p.total > 0 ? Math.round(p.done / p.total * 100) + "%" : "100%";
   const txt = p.total > 1 ? `${p.text} (${p.done}/${p.total})` : p.text;
-  T("status", p.stage === "running" ? "§a" + txt : "§7" + txt);
+  T("status", MC.fit(p.stage === "running" ? "§a" + txt : "§7" + txt, 205));
+});
+listen("game-ready", p => {
+  starting.delete(p.id); running.add(p.id);
+  if (p.id === current) T("status", "§aMinecraft abierto · ¡a jugar!");
+  renderHome();
 });
 listen("game-exit", p => {
-  T("status", p.code === 0 ? "§7Minecraft se ha cerrado" : "§cMinecraft se cerró con un error (código " + p.code + ")");
+  starting.delete(p.id); running.delete(p.id);
+  if (instances[p.id]) instances[p.id].playtime = p.total;
+  T("status", p.code === 0 ? "§7Has jugado " + fmtTime(p.played || 0) : "§cMinecraft se cerró con un error (código " + p.code + ")");
+  renderHome();
   refreshServer();
 });
+
+/* ================================================================== novedades */
+function wrapMC(text, max) {
+  const out = []; let line = "";
+  for (const w of String(text).split(/\s+/)) {
+    const tryL = line ? line + " " + w : w;
+    if (MC.width(tryL) > max && line) { out.push(line); line = w; } else line = tryL;
+  }
+  if (line) out.push(line);
+  return out;
+}
+function showNews(title, sub, items, ok) {
+  T("nwTitle", title, { s: 3 });
+  T("nwSub", sub);
+  const list = $("nwList"); list.innerHTML = "";
+  for (const it of items) {
+    wrapMC(it, 214).forEach((l, i) => {
+      const sp = document.createElement("span"); sp.className = "t"; list.appendChild(sp);
+      T(sp, (i === 0 ? "§a» §f" : "   §f") + l);
+    });
+  }
+  T("nwOkT", ok || "§lVALE");
+  $("v-news").classList.add("on");
+}
+/** Notas de un release de GitHub (markdown sencillo) -> lineas. */
+function notesToItems(md) {
+  return String(md || "").split(/\r?\n/).map(l => l.replace(/^\s*[-*•]\s*/, "").replace(/\*\*/g, "").trim()).filter(Boolean);
+}
 
 /* ================================================================== navegacion */
 function go(v) {
@@ -498,6 +548,7 @@ async function boot() {
   await selfUpdate();
   const st = await invoke("get_state");
   settings = st.settings; appVersion = st.version; msAvailable = st.ms_available;
+  (st.running || []).forEach(id => running.add(id));
   current = settings.last_instance in INST ? settings.last_instance : "zeres";
   if (!st.theme_ready) {
     $("boot").classList.add("on");
@@ -525,6 +576,16 @@ async function boot() {
   refreshInstances(false);
   refreshServer();
   setInterval(refreshServer, 30000);
+
+  // novedades: si el launcher se acaba de actualizar, se ensena lo nuevo de cada version
+  $("nwOk").onclick = () => $("v-news").classList.remove("on");
+  invoke("whats_new").then(r => {
+    if (!r || !r.show) return;
+    const items = [];
+    (r.releases || []).forEach(rel => notesToItems(rel.notes).forEach(n => items.push(n)));
+    if (!items.length) items.push("Mejoras y correcciones.");
+    showNews("§6§l¡NOVEDADES!", "§7Zeres Launcher §f" + r.from + " §7» §a" + r.to, items, "§l¡VAMOS!");
+  }).catch(() => { });
 
   // eventos
   $("wMin").onclick = () => appWindow.minimize();

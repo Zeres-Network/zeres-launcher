@@ -52,6 +52,10 @@ pub struct Settings {
     /// mods opcionales desactivados por instancia (rutas dentro de la instancia)
     pub disabled_mods: HashMap<String, Vec<String>>,
     pub last_instance: String,
+    /// segundos jugados por instancia
+    pub playtime: HashMap<String, u64>,
+    /// ultima version del launcher cuyas novedades ya vio el jugador
+    pub last_seen_version: String,
     pub accounts: Vec<Account>,
     pub active: String,
 }
@@ -75,6 +79,8 @@ impl Default for Settings {
             manifest_url: DEFAULT_MANIFEST.to_string(),
             disabled_mods: HashMap::new(),
             last_instance: "zeres".to_string(),
+            playtime: HashMap::new(),
+            last_seen_version: String::new(),
             accounts: Vec::new(),
             active: String::new(),
         }
