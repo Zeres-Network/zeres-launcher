@@ -35,15 +35,41 @@ const MC = (() => {
     ready = true;
   }
 
+  // letras "versalitas" de los MOTD (ʜᴀᴄɪᴇɴᴅᴏ): se dibujan como mayusculas pequeñas
+  const SMALL = { "ᴀ": "A", "ʙ": "B", "ᴄ": "C", "ᴅ": "D", "ᴇ": "E", "ꜰ": "F", "ɢ": "G", "ʜ": "H", "ɪ": "I", "ᴊ": "J", "ᴋ": "K", "ʟ": "L",
+    "ᴍ": "M", "ɴ": "N", "ᴏ": "O", "ᴘ": "P", "ǫ": "Q", "ʀ": "R", "ꜱ": "S", "ᴛ": "T", "ᴜ": "U", "ᴠ": "V", "ᴡ": "W", "ʏ": "Y", "ᴢ": "Z" };
+  /** Glifo de un caracter; si la fuente no lo tiene, se rasteriza con una fuente del sistema (como el "unifont" del juego). */
+  function glyph(c) {
+    let g = glyphs.get(c);
+    if (g) return g;
+    if (SMALL[c]) {
+      const base = glyphs.get(SMALL[c]);
+      if (base) { g = { ...base, small: true }; glyphs.set(c, g); return g; }
+    }
+    const cv = document.createElement("canvas"); cv.width = 16; cv.height = 16;
+    const x = cv.getContext("2d"); x.font = "bold 9px Arial, sans-serif"; x.textBaseline = "alphabetic"; x.fillStyle = "#fff";
+    x.fillText(c, 0, 8);
+    const d = x.getImageData(0, 0, 16, 16).data, mask = new Uint8Array(16 * 16); let maxX = -1;
+    for (let y = 0; y < 16; y++) for (let xx = 0; xx < 16; xx++) if (d[(y * 16 + xx) * 4 + 3] > 110) { mask[y * 16 + xx] = 1; if (xx > maxX) maxX = xx; }
+    g = maxX < 0 ? glyphs.get("?") : { mask, cw: 16, ch: 16, w: maxX + 1, scale: 1, ascent: 8 };
+    glyphs.set(c, g);
+    return g;
+  }
+
   function adv(c, bold) {
     if (c === " ") return 4;
-    const g = glyphs.get(c) || glyphs.get("?");
-    return Math.floor(g.w * g.scale + 0.5) + 1 + (bold ? 1 : 0);
+    const g = glyph(c);
+    const w = g.small ? Math.ceil(g.w * 0.8) : Math.floor(g.w * g.scale + 0.5);
+    return w + 1 + (bold ? 1 : 0);
   }
 
   function parse(text, base) {
     const out = []; let col = base || "f", bold = false;
     for (let i = 0; i < text.length; i++) {
+      if (text[i] === "§" && text[i + 1] === "#" && /^[0-9a-fA-F]{6}$/.test(text.substr(i + 2, 6))) {
+        col = "#" + text.substr(i + 2, 6); bold = false; i += 7;
+        continue;
+      }
       if (text[i] === "§" && i + 1 < text.length) {
         const k = text[++i].toLowerCase();
         if (COLORS[k]) { col = k; bold = false; } else if (k === "l") bold = true; else if (k === "r") { col = base || "f"; bold = false; }
@@ -68,14 +94,23 @@ const MC = (() => {
       let x = 0;
       for (const p of parts) {
         if (p.c !== " ") {
-          const gl = glyphs.get(p.c) || glyphs.get("?");
-          let col = COLORS[p.col];
+          const gl = glyph(p.c);
+          let col = p.col.startsWith("#") ? p.col : COLORS[p.col];
           if (pass === 0) { const n = parseInt(col.slice(1), 16); col = `rgb(${(n >> 16 & 255) >> 2},${(n >> 8 & 255) >> 2},${(n & 255) >> 2})`; }
           g.fillStyle = col;
-          const oy = top + 7 - gl.ascent, off = pass === 0 ? 1 : 0, px = Math.ceil(gl.scale * s);
-          for (let b = 0; b < (p.bold ? 2 : 1); b++)
-            for (let y = 0; y < gl.ch; y++) for (let xx = 0; xx < gl.cw; xx++)
-              if (gl.mask[y * gl.cw + xx]) g.fillRect((x + xx * gl.scale + off + b) * s, (oy + y * gl.scale + off) * s, px, px);
+          const off = pass === 0 ? 1 : 0;
+          if (gl.small) {
+            // mayuscula reducida (5 px de alto en vez de 7), apoyada en la linea base
+            const k = 0.8, oy = top + 7 - gl.ascent * k, px = Math.ceil(k * s);
+            for (let b = 0; b < (p.bold ? 2 : 1); b++)
+              for (let y = 0; y < gl.ch; y++) for (let xx = 0; xx < gl.cw; xx++)
+                if (gl.mask[y * gl.cw + xx]) g.fillRect(Math.round((x + xx * k + off + b) * s), Math.round((oy + y * k + off) * s), px, px);
+          } else {
+            const oy = top + 7 - gl.ascent, px = Math.ceil(gl.scale * s);
+            for (let b = 0; b < (p.bold ? 2 : 1); b++)
+              for (let y = 0; y < gl.ch; y++) for (let xx = 0; xx < gl.cw; xx++)
+                if (gl.mask[y * gl.cw + xx]) g.fillRect((x + xx * gl.scale + off + b) * s, (oy + y * gl.scale + off) * s, px, px);
+          }
         }
         x += adv(p.c, p.bold);
       }
@@ -107,9 +142,9 @@ const MC = (() => {
     let out = "";
     const walk = (n, inh) => {
       if (typeof n === "string") { out += n; return; }
-      const col = n.color ? (NAMES[n.color] || (n.color.startsWith("#") ? nearest(n.color) : inh.col)) : inh.col;
+      const col = n.color ? (NAMES[n.color] || (n.color.startsWith("#") ? n.color.toUpperCase() : inh.col)) : inh.col;
       const bold = n.bold ?? inh.bold;
-      if (n.text) out += "§" + col + (bold ? "§l" : "") + n.text;
+      if (n.text) out += (col.startsWith("#") ? "§" + col : "§" + col) + (bold ? "§l" : "") + n.text;
       (n.extra || []).forEach(e => walk(e, { col, bold }));
     };
     walk(c, { col: "7", bold: false });

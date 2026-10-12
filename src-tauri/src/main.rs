@@ -86,7 +86,10 @@ async fn server_status(app: St<'_>) -> Result<Value, String> {
     let (host, port) = server_of(m.as_ref());
     match ping::status(&host, port).await {
         Ok((v, ms)) => Ok(json!({"online": true, "ping": ms, "host": host, "status": v})),
-        Err(e) => Ok(json!({"online": false, "host": host, "error": e.to_string()})),
+        Err(e) => {
+            let _ = std::fs::write(settings::base_dir().join("ping-error.log"), format!("{host}:{port} -> {e:#}"));
+            Ok(json!({"online": false, "host": host, "error": e.to_string()}))
+        }
     }
 }
 

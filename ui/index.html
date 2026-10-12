@@ -26,8 +26,8 @@
       <div class="inst" data-inst="zeres"><canvas width="16" height="16" class="ico"></canvas><i class="mark"></i></div>
       <div class="inst" data-inst="cobblemon"><canvas width="16" height="16" class="ico"></canvas><i class="mark"></i></div>
       <span class="sp"></span>
-      <button class="mcbtn sq" id="bSettings" title="Ajustes"><canvas width="10" height="10" id="gearIco"></canvas></button>
-      <button class="mcbtn sq" id="bProfile" title="Perfil"><canvas width="8" height="8" id="headIco"></canvas></button>
+      <button class="sbtn" id="bSettings" title="Ajustes"><canvas width="16" height="16" id="gearIco"></canvas></button>
+      <button class="sbtn" id="bProfile" title="Perfil"><canvas width="8" height="8" id="headIco"></canvas></button>
     </nav>
     <div class="tip" id="tip"></div>
 
@@ -52,9 +52,8 @@
           <span class="t" id="instInfo"></span>
         </div>
         <div class="dock-play">
-          <div class="prog" id="prog"><i id="progBar"></i></div>
           <span class="t status" id="status"></span>
-          <button class="mcbtn play" id="play"><span class="t" id="playT"></span></button>
+          <button class="play" id="play"><i class="fill" id="progBar"></i><canvas width="9" height="9" id="playIco" class="play-ico"></canvas><span class="t" id="playT"></span></button>
         </div>
       </footer>
     </main>
@@ -67,18 +66,20 @@
     </section>
 
     <!-- ============================================================ PERFIL -->
-    <section class="view menu" id="v-profile">
-      <div class="m-head"><span class="t" data-t="Perfil"></span></div>
-      <div class="m-list">
-        <canvas id="skin" width="16" height="32" class="skin"></canvas>
-        <span class="t skin-name" id="skinName"></span>
-        <div class="acc-list" id="accList"></div>
+    <section class="view prof" id="v-profile">
+      <div class="prof-stage" id="stage">
+        <div class="viewer" id="viewer"><div class="player" id="player"></div></div>
+        <div class="prof-name"><span class="t" id="pName"></span><span class="t" id="pKind"></span></div>
+        <span class="t prof-hint" data-t="Arrastra para girar" data-c="8"></span>
       </div>
-      <div class="m-foot">
-        <button class="mcbtn w196" id="pMs" style="width:200px"><span class="t" data-t="Añadir Microsoft"></span></button>
-        <button class="mcbtn w196" id="pOff" style="width:200px"><span class="t" data-t="Añadir sin premium"></span></button>
-        <button class="mcbtn w196" id="pDel" style="width:200px"><span class="t" data-t="Quitar"></span></button>
-        <button class="mcbtn w196" data-home><span class="t" data-t="Hecho"></span></button>
+      <div class="prof-side">
+        <span class="t prof-title" data-t="§lCUENTAS"></span>
+        <div class="acc-list" id="accList"></div>
+        <div class="prof-add">
+          <button class="bbtn green" id="pOff"><span class="t" data-t="+ Sin premium"></span></button>
+          <button class="bbtn" id="pMs"><span class="t" data-t="+ Microsoft"></span></button>
+        </div>
+        <button class="bbtn ghost" data-home><span class="t" data-t="Volver"></span></button>
       </div>
     </section>
 

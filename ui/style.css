@@ -61,13 +61,22 @@ button { font: inherit; color: inherit; background: none; border: 0; cursor: poi
 .side { position: absolute; left: 0; top: 0; bottom: 0; width: 84px; z-index: 3; display: flex; flex-direction: column; align-items: center;
         gap: 12px; padding: 14px 0 14px; background: #000000a8; border-right: 2px solid #000; box-shadow: inset -2px 0 0 #ffffff10; }
 .side .sp { flex: 1; }
-.inst { width: 56px; height: 56px; position: relative; cursor: pointer; background: #00000080; box-shadow: inset 0 0 0 2px #373737, inset 2px 2px 0 2px #1e1e1e; }
-.inst .ico { width: 48px; height: 48px; margin: 4px; display: block; }
-.inst:hover { box-shadow: inset 0 0 0 2px #a0a0a0; }
-.inst.on { box-shadow: inset 0 0 0 2px #fff, inset 0 0 0 4px #000; }
-.inst .mark { position: absolute; left: -14px; top: 18px; width: 6px; height: 20px; background: #fff; display: none; box-shadow: 2px 2px 0 #000; }
+.inst { width: 56px; height: 56px; position: relative; cursor: pointer; background: #1e1e1f; border: 2px solid #0c0c0c;
+        box-shadow: inset 0 2px 0 #ffffff14, inset 0 -3px 0 #0006; transition: transform .08s; }
+.inst .ico { width: 48px; height: 48px; margin: 2px; display: block; }
+.inst:hover { border-color: #8a8a8a; }
+.inst:active { transform: translateY(1px); }
+.inst.on { border-color: #fff; box-shadow: inset 0 0 0 2px #000, 0 0 0 1px #000; }
+.inst .mark { position: absolute; left: -16px; top: 16px; width: 6px; height: 20px; background: #fff; display: none; box-shadow: 2px 2px 0 #000; }
 .inst.on .mark { display: block; }
-.side .mcbtn canvas { width: 24px; height: 24px; }
+
+/* botones cuadrados de la barra lateral (estilo Bedrock) */
+.sbtn { width: 52px; height: 52px; display: grid; place-items: center; cursor: pointer; background: #48494a; border: 2px solid #1e1e1f;
+        box-shadow: inset 0 3px 0 #6d6e70, inset 0 -5px 0 #313233; transition: background .1s; }
+.sbtn canvas { width: 30px; height: 30px; margin-top: -2px; }
+.sbtn:hover { background: #58595b; box-shadow: inset 0 3px 0 #7d7e80, inset 0 -5px 0 #3a3b3c; }
+.sbtn:active, .sbtn.on { background: #313233; box-shadow: inset 0 2px 0 #1e1e1f, inset 0 -2px 0 #3a3b3c; }
+.sbtn:active canvas, .sbtn.on canvas { margin-top: 2px; }
 .tip { position: absolute; z-index: 9; display: none; padding: 6px 8px 4px; pointer-events: none; background: #100010f0;
        box-shadow: inset 0 0 0 2px #100010f0, inset 0 0 0 4px #5000ff50; }
 
@@ -95,10 +104,20 @@ button { font: inherit; color: inherit; background: none; border: 0; cursor: poi
 .dock-info { display: flex; flex-direction: column; gap: 6px; padding-bottom: 6px; }
 .dock-play { display: flex; flex-direction: column; gap: 8px; align-items: stretch; }
 .status { align-self: center; min-height: 18px; }
-.prog { height: 8px; border: 2px solid #fff; padding: 1px; display: none; }
-.prog.on { display: block; }
-.prog i { display: block; height: 100%; width: 0; background: #fff; transition: width .15s; }
-.play { width: 100%; height: 52px; }
+/* boton JUGAR estilo Bedrock: verde con relieve; la barra de progreso va dentro del propio boton */
+.play { position: relative; width: 100%; height: 60px; display: flex; align-items: center; justify-content: center; gap: 12px; cursor: pointer;
+        overflow: hidden; background: #3c8527; border: 2px solid #1e1e1f;
+        box-shadow: inset 0 4px 0 #52a535, inset 0 -6px 0 #1d4d13, 0 4px 0 #0008; transition: background .1s, transform .05s; }
+.play:hover { background: #46992e; box-shadow: inset 0 4px 0 #62bd42, inset 0 -6px 0 #22591a, 0 4px 0 #0008; }
+.play:active { transform: translateY(3px); box-shadow: inset 0 3px 0 #2a641c, inset 0 -2px 0 #1d4d13, 0 1px 0 #0008; }
+.play.upd { background: #c27a12; box-shadow: inset 0 4px 0 #e39b2a, inset 0 -6px 0 #7a4a06, 0 4px 0 #0008; }
+.play.upd:hover { background: #d4881a; }
+.play:disabled { cursor: default; background: #313233; box-shadow: inset 0 4px 0 #48494a, inset 0 -6px 0 #1e1e1f, 0 4px 0 #0008; transform: none; }
+.play .fill { position: absolute; left: 0; top: 0; bottom: 0; width: 0; background: #3c8527; box-shadow: inset 0 4px 0 #52a535, inset 0 -6px 0 #1d4d13;
+              transition: width .2s; display: none; }
+.play.busy .fill { display: block; }
+.play .play-ico, .play .t { position: relative; }
+.play .play-ico { width: 27px; height: 27px; }
 .corner { position: absolute; left: 6px; bottom: 4px; }
 
 /* menus (ajustes, perfil, cuentas) como los del juego */
@@ -112,13 +131,41 @@ button { font: inherit; color: inherit; background: none; border: 0; cursor: poi
 .opt-grid .wide { grid-column: span 2; }
 .opt-grid .mcbtn { width: 100%; }
 .opt-grid .note { grid-column: span 2; display: flex; justify-content: center; padding-top: 6px; }
-.skin { position: absolute; left: 60px; top: 28px; width: 160px; height: 320px; }
-.skin-name { position: absolute; left: 140px; top: 360px; transform: translateX(-50%); }
-.acc-list { position: absolute; left: 290px; top: 20px; width: 590px; display: flex; flex-direction: column; gap: 4px; }
-.acc { position: relative; height: 72px; padding: 4px; display: flex; gap: 6px; cursor: pointer; background: #0000005a; }
-.acc.sel { outline: 2px solid #fff; outline-offset: -2px; box-shadow: inset 0 0 0 4px #000; }
-.acc canvas { width: 64px; height: 64px; }
-.acc .txt { display: flex; flex-direction: column; gap: 2px; padding-top: 3px; }
+/* perfil: skin en 3D a la izquierda, cuentas a la derecha */
+.prof { background: linear-gradient(90deg, #000000c8 0%, #000000a0 46%, #000000d8 46%); }
+.prof.on { display: grid; grid-template-columns: 1fr 420px; }
+.prof-stage { position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 22px; cursor: grab;
+              background: radial-gradient(ellipse at 50% 62%, #ffffff14, transparent 60%); }
+.prof-stage:active { cursor: grabbing; }
+.viewer { width: 260px; height: 380px; perspective: 900px; display: grid; place-items: center; }
+.player { position: relative; width: 0; height: 0; transform-style: preserve-3d; }
+.part { position: absolute; transform-style: preserve-3d; }
+.part > i { position: absolute; background-repeat: no-repeat; image-rendering: pixelated; backface-visibility: hidden; }
+.prof-stage::after { content: ""; position: absolute; bottom: 92px; width: 150px; height: 18px; border-radius: 50%; background: #0009; filter: blur(4px); z-index: -1; }
+.prof-name { display: flex; flex-direction: column; align-items: center; gap: 8px; }
+.prof-hint { position: absolute; bottom: 12px; }
+.prof-side { display: flex; flex-direction: column; gap: 12px; padding: 28px 26px 24px 22px; border-left: 2px solid #000; box-shadow: inset 2px 0 0 #ffffff12; }
+.prof-title { margin-bottom: 4px; }
+.acc-list { flex: 1; display: flex; flex-direction: column; gap: 8px; overflow: auto; }
+.acc { position: relative; height: 64px; padding: 6px 10px 6px 6px; display: flex; align-items: center; gap: 12px; cursor: pointer;
+       background: #2b2b2c; border: 2px solid #1e1e1f; box-shadow: inset 0 2px 0 #ffffff12, inset 0 -3px 0 #0005; }
+.acc:hover { border-color: #8a8a8a; }
+.acc.on { border-color: #52a535; background: #24301f; }
+.acc > canvas { width: 48px; height: 48px; flex: none; box-shadow: 0 0 0 2px #000; }
+.acc .txt { flex: 1; display: flex; flex-direction: column; gap: 6px; }
+.acc .del { width: 26px; height: 26px; display: grid; place-items: center; background: #48494a; border: 2px solid #1e1e1f; opacity: 0; transition: opacity .1s; }
+.acc:hover .del { opacity: 1; }
+.acc .del:hover { background: #a3201a; }
+.prof-add { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.bbtn { height: 44px; display: flex; align-items: center; justify-content: center; cursor: pointer; background: #48494a; border: 2px solid #1e1e1f;
+        box-shadow: inset 0 3px 0 #6d6e70, inset 0 -5px 0 #313233; }
+.bbtn:hover { background: #58595b; }
+.bbtn:active { box-shadow: inset 0 2px 0 #1e1e1f, inset 0 -2px 0 #3a3b3c; }
+.bbtn.green { background: #3c8527; box-shadow: inset 0 3px 0 #52a535, inset 0 -5px 0 #1d4d13; }
+.bbtn.green:hover { background: #46992e; }
+.bbtn.ghost { background: transparent; box-shadow: none; border-color: #48494a; }
+.bbtn.ghost:hover { background: #ffffff10; }
+.bbtn:disabled { opacity: .45; cursor: default; }
 .form { position: absolute; left: 50%; top: 40px; transform: translateX(-50%); width: 400px; display: flex; flex-direction: column; gap: 10px; }
 .form.center { align-items: center; text-align: center; width: 640px; top: 60px; gap: 18px; }
 

@@ -62,30 +62,52 @@ const TEX = {};
 async function tex(name) { if (!TEX[name]) TEX[name] = await img(TH + name); return TEX[name]; }
 function pixels(g, rows, pal) { rows.forEach((r, y) => [...r].forEach((c, x) => { if (pal[c]) { g.fillStyle = pal[c]; g.fillRect(x, y, 1, 1); } })); }
 const BALL = ["................", ".....oooooo.....", "...oo######oo...", "..o###hh#####o..", ".o###hh#######o.", ".o############o.", "o######oo######o", "ooooooowwooooooo", "o......oo......o", "o..............o", ".o............o.", ".o............o.", "..o..........o..", "...oo......oo...", ".....oooooo.....", "................"];
-const GEAR = ["....##....", ".#.####.#.", "..######..", ".###..###.", "####..####", "####..####", ".###..###.", "..######..", ".#.####.#.", "....##...."];
+/** Engranaje pixelado de 16x16 con sombreado (se pinta con un poco de luz arriba a la izquierda). */
+function drawGear(cv) {
+  const g = cv.getContext("2d"); g.clearRect(0, 0, 16, 16);
+  for (let y = 0; y < 16; y++) for (let x = 0; x < 16; x++) {
+    const dx = x - 7.5, dy = y - 7.5, r = Math.hypot(dx, dy), a = Math.atan2(dy, dx);
+    const tooth = Math.cos(a * 8) > 0.25;
+    const outer = tooth ? 7.6 : 5.9;
+    if (r > outer || r < 2.3) continue;
+    const edge = r > outer - 1.1 || r < 3.3;
+    const light = (-dx - dy) / 16;
+    const v = edge ? 0x3a : Math.round(0xb8 + light * 70);
+    const c = Math.max(0, Math.min(255, v));
+    g.fillStyle = edge ? "#262728" : `rgb(${c},${c},${c + 6})`;
+    g.fillRect(x, y, 1, 1);
+  }
+}
+/** Triangulo de "play" pixelado (9x9). */
+const PLAY = ["##.......", "####.....", "######...", "########.", "#########", "########.", "######...", "####.....", "##......."];
+function drawPlayIcon(cv, color) {
+  const g = cv.getContext("2d"); g.clearRect(0, 0, 9, 9);
+  pixels(g, PLAY, { "#": color });
+}
 async function drawIcons() {
-  const logo = await img("img/zeres_network.png");
+  const zicon = await img("img/zeres_icon.png");
   for (const el of document.querySelectorAll(".inst")) {
     const id = el.dataset.inst, cv = el.querySelector("canvas");
     cv.width = 48; cv.height = 48;
-    const g = cv.getContext("2d"); g.imageSmoothingEnabled = false;
-    const t = await tex(`block/${INST[id].tile}.png`);
-    g.drawImage(t, 0, 0, 16, 16, 0, 0, 48, 48);
-    g.fillStyle = "#0006"; g.fillRect(0, 0, 48, 48);
+    const g = cv.getContext("2d");
+    const grd = g.createRadialGradient(24, 20, 4, 24, 24, 34);
+    grd.addColorStop(0, id === "zeres" ? "#4a1418" : "#14304d"); grd.addColorStop(1, "#111112");
+    g.fillStyle = grd; g.fillRect(0, 0, 48, 48);
     if (id === "zeres") {
-      g.drawImage(logo, 1, 0, 40, 64, 9, 0, 30, 48);
+      g.imageSmoothingEnabled = true;
+      g.drawImage(zicon, 3, 3, 42, 42);
     } else {
+      g.imageSmoothingEnabled = false;
       const c = document.createElement("canvas"); c.width = 16; c.height = 16;
       const cg = c.getContext("2d");
       pixels(cg, BALL, { "#": "#e3262f", h: "#ff9a9a", o: "#111", w: "#fff" });
       cg.fillStyle = "#f2f2f2";
       [[8, 1, 6], [8, 9, 14], [9, 1, 14], [10, 2, 13], [11, 2, 13], [12, 3, 12], [13, 5, 10]].forEach(([y, a, b]) => cg.fillRect(a, y, b - a + 1, 1));
       cg.fillStyle = "#111"; cg.fillRect(6, 7, 4, 1); cg.fillRect(6, 8, 1, 1); cg.fillRect(9, 8, 1, 1);
-      g.drawImage(c, 0, 0, 16, 16, 0, 0, 48, 48);
+      g.drawImage(c, 0, 0, 16, 16, 4, 4, 40, 40);
     }
   }
-  const gg = $("gearIco").getContext("2d"); gg.clearRect(0, 0, 10, 10);
-  pixels(gg, GEAR, { "#": "#e0e0e0" });
+  drawGear($("gearIco"));
 }
 async function skinOf(acc) {
   if (acc && acc.skin_url) { try { return await img(acc.skin_url); } catch (_) { } }
@@ -116,14 +138,15 @@ function instInfo(id) {
   const loader = id === "cobblemon" ? " §8· §7Fabric" + (i.mods ? " §8· §7" + i.mods + " mods" : "") + (i.installed ? " §8· §7pack " + i.installed : "") : " §8· §7Vanilla";
   return mc + loader;
 }
-function playLabel() {
+/** [texto, modo] del boton grande: modo "play", "upd", "off". */
+function playState() {
   const i = instances[current];
-  if (busy) return "§7Preparando...";
-  if (!i) return "Jugar";
-  if (i.state === "install") return "Instalar";
-  if (i.state === "update") return "§eActualizar §7(" + i.installed + " » " + i.latest + ")";
-  if (i.state === "offline" && !i.installed) return "§7Sin conexión";
-  return "Jugar";
+  if (busy) return ["§lPREPARANDO", "busy"];
+  if (!i) return ["§lJUGAR", "play"];
+  if (i.state === "install") return ["§lINSTALAR", "upd"];
+  if (i.state === "update") return ["§lACTUALIZAR", "upd"];
+  if (i.state === "offline" && !i.installed) return ["§lSIN CONEXIÓN", "off"];
+  return ["§lJUGAR", "play"];
 }
 async function renderHome() {
   document.querySelectorAll(".inst").forEach(el => el.classList.toggle("on", el.dataset.inst === current));
@@ -131,8 +154,14 @@ async function renderHome() {
   T("splash", SPLASHES[splashI], { c: "e" });
   T("instName", "§l" + INST[current].name);
   T("instInfo", instInfo(current));
-  T("playT", playLabel());
-  $("play").disabled = busy || (instances[current]?.state === "offline" && !instances[current]?.installed);
+  const [label, mode] = playState();
+  T("playT", label, { s: 3 });
+  const pb = $("play");
+  pb.classList.toggle("upd", mode === "upd");
+  pb.classList.toggle("busy", mode === "busy");
+  pb.disabled = mode === "busy" || mode === "off";
+  $("playIco").style.display = mode === "play" ? "" : "none";
+  drawPlayIcon($("playIco"), "#ffffff");
   const n = Array.isArray(news) && news[0];
   T("news", n ? "§e" + n.tag + " §7· §f" + n.title + " §8- §7" + MC.fit(n.text || "", 280) : "");
   renderServer();
@@ -145,7 +174,7 @@ function renderServer() {
   if (!server) { T("srvName", "Zeres Network"); T("srvMotd1", "§8Conectando..."); T("srvMotd2", ""); T("srvPlayers", ""); return; }
   if (!server.online) {
     tex("gui/unknown_server.png").then(i => fav.drawImage(i, 0, 0, 64, 64));
-    T("srvName", "Zeres Network"); T("srvMotd1", "§4No se puede conectar con el servidor"); T("srvMotd2", "§8" + server.host); T("srvPlayers", "");
+    T("srvName", "Zeres Network"); T("srvMotd1", "§4No se puede conectar con el servidor"); T("srvMotd2", "§8" + MC.fit(server.error ? server.host + " · " + server.error : server.host, 270)); T("srvPlayers", "");
     $("pingbar").style.backgroundImage = `url("${TH}gui/server_list/unreachable.png")`;
     return;
   }
@@ -169,9 +198,12 @@ async function refreshInstances(force) {
   } catch (e) { T("status", "§c" + MC.fit(String(e), 200)); }
   renderHome();
 }
+let serverRetry = null;
 async function refreshServer() {
-  try { server = await invoke("server_status"); } catch (_) { server = { online: false, host: "mc.zeres.fun" }; }
+  try { server = await invoke("server_status"); } catch (e) { server = { online: false, host: "zerescobblemon.holy.gg", error: String(e) }; }
   renderServer();
+  clearTimeout(serverRetry);
+  if (!server.online) serverRetry = setTimeout(refreshServer, 8000); // mientras no conecte, reintenta cada 8 s
 }
 async function selectInstance(id) {
   if (id === current || busy) return;
@@ -185,14 +217,14 @@ async function selectInstance(id) {
 async function play(repair = false, launch = true) {
   if (busy) return;
   if (!activeAccount()) { go("profile"); T("status", "§eAñade una cuenta para jugar"); return; }
-  busy = true; $("prog").classList.add("on"); $("progBar").style.width = "0"; renderHome();
+  busy = true; $("progBar").style.width = "0"; renderHome();
   try {
     await invoke("play", { id: current, repair, launch });
     if (!launch) T("status", "§aArchivos comprobados");
   } catch (e) {
     T("status", "§c" + MC.fit(String(e), 205));
   }
-  busy = false; $("prog").classList.remove("on");
+  busy = false;
   await refreshInstances(false);
 }
 listen("progress", p => {
@@ -209,6 +241,8 @@ listen("game-exit", p => {
 /* ================================================================== navegacion */
 function go(v) {
   document.querySelectorAll(".view").forEach(x => x.classList.toggle("on", x.id === "v-" + v));
+  $("bSettings").classList.toggle("on", v === "settings");
+  $("bProfile").classList.toggle("on", v === "profile" || v === "add" || v === "ms");
   $("pano").classList.toggle("blur", v !== "home");
   if (v === "home") renderHome();
   if (v === "settings") renderSettings();
@@ -345,25 +379,72 @@ function bindField(fieldId, inputId, txtId, value, max, onChange) {
 setInterval(() => { caretOn = !caretOn; fields.forEach(d => { try { d(); } catch (_) { } }); }, 320);
 
 /* ================================================================== perfil */
+/* Muñeco 3D con la skin: cada parte es una caja con sus 6 caras recortadas de la textura (formato de skin de Minecraft). */
+const K = 9; // pixeles de pantalla por pixel de skin
+function skinUrl(acc) {
+  if (acc && acc.skin_url) return acc.skin_url;
+  const alex = acc && parseInt(acc.uuid.slice(-1), 16) % 2 === 1;
+  return TH + (alex ? "skin/alex.png" : "skin/steve.png");
+}
+function isSlim(acc) { return !(acc && acc.skin_url) && !!acc && parseInt(acc.uuid.slice(-1), 16) % 2 === 1; }
+/** Caja de w*h*d con la textura en (u, v), centrada en (x, y, z) (en pixeles de skin). */
+function cuboid(url, u, v, w, h, d, x, y, z, grow = 0) {
+  const W = (w + grow) * K, H = (h + grow) * K, D = (d + grow) * K;
+  const face = (fu, fv, fw, fh, pw, ph, tf) => `<i style="width:${pw}px;height:${ph}px;left:${(W - pw) / 2}px;top:${(H - ph) / 2}px;
+      background-image:url('${url}');background-size:${64 * K * pw / (fw * K)}px ${64 * K * ph / (fh * K)}px;
+      background-position:-${fu * pw / fw}px -${fv * ph / fh}px;transform:${tf}"></i>`;
+  return `<div class="part" style="width:${W}px;height:${H}px;transform:translate3d(${x * K - W / 2}px,${y * K - H / 2}px,${z * K}px)">
+    ${face(u + d, v + d, w, h, W, H, `translateZ(${D / 2}px)`)}
+    ${face(u + 2 * d + w, v + d, w, h, W, H, `rotateY(180deg) translateZ(${D / 2}px)`)}
+    ${face(u, v + d, d, h, D, H, `rotateY(-90deg) translateZ(${W / 2}px)`)}
+    ${face(u + d + w, v + d, d, h, D, H, `rotateY(90deg) translateZ(${W / 2}px)`)}
+    ${face(u + d, v, w, d, W, D, `rotateX(90deg) translateZ(${H / 2}px)`)}
+    ${face(u + d + w, v, w, d, W, D, `rotateX(-90deg) translateZ(${H / 2}px)`)}
+  </div>`;
+}
+function buildPlayer(acc) {
+  const url = skinUrl(acc), aw = isSlim(acc) ? 3 : 4, ax = 4 + aw / 2;
+  $("player").innerHTML =
+    cuboid(url, 0, 0, 8, 8, 8, 0, -10, 0) + cuboid(url, 32, 0, 8, 8, 8, 0, -10, 0, 1) +            // cabeza + gorro
+    cuboid(url, 16, 16, 8, 12, 4, 0, 0, 0) + cuboid(url, 16, 32, 8, 12, 4, 0, 0, 0, 0.5) +        // cuerpo + chaqueta
+    cuboid(url, 40, 16, aw, 12, 4, -ax, 0, 0) + cuboid(url, 40, 32, aw, 12, 4, -ax, 0, 0, 0.5) +   // brazo derecho
+    cuboid(url, 32, 48, aw, 12, 4, ax, 0, 0) + cuboid(url, 48, 48, aw, 12, 4, ax, 0, 0, 0.5) +     // brazo izquierdo
+    cuboid(url, 0, 16, 4, 12, 4, -2, 12, 0) + cuboid(url, 0, 32, 4, 12, 4, -2, 12, 0, 0.5) +       // pierna derecha
+    cuboid(url, 16, 48, 4, 12, 4, 2, 12, 0) + cuboid(url, 0, 48, 4, 12, 4, 2, 12, 0, 0.5);         // pierna izquierda
+}
+let rotY = -25, rotX = -8, dragging = null, lastSpin = 0;
+function spinPlayer(t) {
+  if (!dragging && $("v-profile").classList.contains("on") && t - lastSpin < 100) rotY += (t - lastSpin) * 0.012;
+  lastSpin = t;
+  $("player").style.transform = `translateY(-14px) rotateX(${rotX}deg) rotateY(${rotY}deg)`;
+  requestAnimationFrame(spinPlayer);
+}
+requestAnimationFrame(spinPlayer);
+$("stage").addEventListener("mousedown", e => { dragging = { x: e.clientX, y: e.clientY, ry: rotY, rx: rotX }; });
+addEventListener("mousemove", e => { if (dragging) { rotY = dragging.ry + (e.clientX - dragging.x) * 0.6; rotX = Math.max(-30, Math.min(30, dragging.rx - (e.clientY - dragging.y) * 0.3)); } });
+addEventListener("mouseup", () => { dragging = null; });
+
 async function renderProfile() {
-  const accs = settings.accounts;
-  if (!selAcc || !accs.find(a => a.uuid === selAcc)) selAcc = (activeAccount() || {}).uuid || null;
-  const sel = accs.find(a => a.uuid === selAcc);
-  await drawBody($("skin"), sel || null);
-  T("skinName", sel ? (sel.uuid === settings.active ? "§a" : "§f") + sel.name : "§7Sin cuenta");
-  $("accList").innerHTML = accs.length ? accs.map(a => `<div class="acc ${a.uuid === selAcc ? "sel" : ""}" data-acc="${a.uuid}">
-      <canvas width="8" height="8"></canvas><div class="txt"><span class="t"></span><span class="t"></span><span class="t"></span></div></div>`).join("")
-    : `<div class="acc"><div class="txt"><span class="t" id="noAcc"></span></div></div>`;
-  if (!accs.length) T("noAcc", "§7Añade una cuenta para poder jugar");
+  const accs = settings.accounts, act = activeAccount();
+  buildPlayer(act);
+  T("pName", act ? "§l" + act.name : "§7Sin cuenta", { s: 3 });
+  T("pKind", act ? (act.kind === "microsoft" ? "§aCuenta Microsoft · premium" : "§7Cuenta sin premium") : "§8Añade una cuenta para jugar");
+  $("accList").innerHTML = accs.map(a => `<div class="acc ${a.uuid === settings.active ? "on" : ""}" data-acc="${a.uuid}">
+      <canvas width="8" height="8"></canvas><div class="txt"><span class="t"></span><span class="t"></span></div>
+      <button class="del" data-del="${a.uuid}" title="Quitar cuenta"><span class="t"></span></button></div>`).join("");
+  if (!accs.length) $("accList").innerHTML = `<div class="acc"><div class="txt"><span class="t" id="noAcc"></span></div></div>`;
+  if (!accs.length) T("noAcc", "§7Todavía no hay cuentas");
   for (const el of document.querySelectorAll("[data-acc]")) {
     const a = accs.find(x => x.uuid === el.dataset.acc), ts = el.querySelectorAll(".t");
     await drawHead(el.querySelector("canvas"), a);
-    T(ts[0], a.name + (a.uuid === settings.active ? " §a(en uso)" : " §8(clic para usarla)"));
-    T(ts[1], a.kind === "microsoft" ? "§aCuenta Microsoft §7· premium" : "§7Sin premium §8· contraseña en la network");
-    T(ts[2], a.kind === "microsoft" ? "§8Skin de minecraft.net" : "§8Skin propia en el servidor");
-    el.onclick = async () => { selAcc = a.uuid; settings = await invoke("set_active", { uuid: a.uuid }); renderProfile(); };
+    T(ts[0], (a.uuid === settings.active ? "§a" : "§f") + a.name + (a.uuid === settings.active ? " §2(en uso)" : ""));
+    T(ts[1], a.kind === "microsoft" ? "§aMicrosoft" : "§7Sin premium");
+    T(ts[2], "§fx");
+    el.onclick = async e => {
+      if (e.target.closest("[data-del]")) { settings = await invoke("remove_account", { uuid: a.uuid }); renderProfile(); renderHome(); return; }
+      settings = await invoke("set_active", { uuid: a.uuid }); renderProfile(); renderHome();
+    };
   }
-  $("pDel").disabled = !sel;
 }
 
 /* ================================================================== cuentas */
@@ -384,7 +465,7 @@ async function msLogin() {
   }
 }
 listen("ms-login", r => {
-  if (r.ok) { settings = r.settings; selAcc = settings.active; go("profile"); }
+  if (r.ok) { settings = r.settings; go("profile"); }
   else { T("msLine1", "§c" + MC.fit(r.error, 300)); T("msCode", ""); }
 });
 function nameRender() { T("nameTxt", $("nameInput").value + (document.activeElement === $("nameInput") && caretOn ? "_" : "")); }
@@ -463,7 +544,6 @@ async function boot() {
   $("bProfile").onclick = () => go($("v-profile").classList.contains("on") ? "home" : "profile");
   document.querySelectorAll("[data-home]").forEach(b => b.onclick = () => go("home"));
   document.querySelectorAll("[data-goto]").forEach(b => b.onclick = () => go(b.dataset.goto));
-  $("pDel").onclick = async () => { if (selAcc) { settings = await invoke("remove_account", { uuid: selAcc }); selAcc = null; renderProfile(); } };
   $("pOff").onclick = () => go("add");
   $("pMs").onclick = () => msLogin();
   $("msOpen").onclick = () => msUrl && invoke("open_url", { url: msUrl });
@@ -472,7 +552,7 @@ async function boot() {
   ni.onfocus = () => $("nameField").classList.add("focus");
   ni.onblur = () => { $("nameField").classList.remove("focus"); nameRender(); };
   const addOk = async () => {
-    try { settings = await invoke("add_offline", { name: ni.value }); selAcc = settings.active; go("profile"); }
+    try { settings = await invoke("add_offline", { name: ni.value }); go("profile"); }
     catch (e) { T("nameErr", String(e), { c: "c" }); }
   };
   $("addOk").onclick = addOk;
