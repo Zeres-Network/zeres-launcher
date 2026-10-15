@@ -119,3 +119,25 @@ mod tests {
         let _ = std::fs::remove_dir_all(&dir);
     }
 }
+
+#[cfg(test)]
+mod red {
+    /// Descarga real del repo privado (necesita ZERES_PACKS_TOKEN al compilar): cargo test -- --ignored packs_reales
+    #[tokio::test]
+    #[ignore]
+    async fn packs_reales() {
+        let dir = std::env::temp_dir().join(format!("zeres-packs-red-{}", std::process::id()));
+        std::fs::create_dir_all(&dir).unwrap();
+        let n = super::sync("Zeres-Network/zeres-resourcepacks", &dir).await.unwrap();
+        assert_eq!(n, 2);
+        for f in ["ZeresPack-servidor.zip", "zerescore-pack.zip"] {
+            assert!(dir.join("resourcepacks").join(f).exists(), "{f}");
+        }
+        let opts = std::fs::read_to_string(dir.join("options.txt")).unwrap();
+        println!("{opts}");
+        // segunda vez: ya estan, no descarga nada y deja lo mismo
+        assert_eq!(super::sync("Zeres-Network/zeres-resourcepacks", &dir).await.unwrap(), 2);
+        assert_eq!(std::fs::read_to_string(dir.join("options.txt")).unwrap(), opts);
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+}
