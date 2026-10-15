@@ -10,6 +10,7 @@ import datetime, json, os, shutil, subprocess, sys
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 REPO = "Zeres-Network/zeres-launcher"
 KEY = os.environ.get("ZERES_SIGNING_KEY", "C:/Users/Administrator/zeres-devtools/zeres-launcher-updater.key")
+PACKS_TOKEN = os.path.join(os.path.dirname(KEY), "zeres-packs-token.txt")
 
 
 def main():
@@ -24,6 +25,11 @@ def main():
     env = dict(os.environ)
     env["TAURI_SIGNING_PRIVATE_KEY"] = open(KEY, encoding="utf-8").read().strip()
     env["TAURI_SIGNING_PRIVATE_KEY_PASSWORD"] = ""
+    # token de solo lectura del repo privado de packs de texturas (ver src-tauri/src/packs.rs); nunca va en git
+    if os.path.exists(PACKS_TOKEN):
+        env["ZERES_PACKS_TOKEN"] = open(PACKS_TOKEN, encoding="utf-8").read().strip()
+    elif "--sin-packs" not in args:
+        sys.exit(f"falta {PACKS_TOKEN} (token del repo de packs); usa --sin-packs para compilar sin packs")
     subprocess.run("npx tauri build", cwd=ROOT, env=env, shell=True, check=True)
 
     nsis = os.path.join(ROOT, "src-tauri", "target", "release", "bundle", "nsis")

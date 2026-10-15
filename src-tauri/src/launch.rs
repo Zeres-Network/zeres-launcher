@@ -97,6 +97,11 @@ pub async fn prepare(id: &str, entry: &Value, manifest_url: &str, settings: &Set
         state.managed = keep.into_iter().collect();
         state.managed.sort();
     }
+    // packs de texturas del repo privado (mientras el servidor no los mande al entrar); si falla, se juega igual
+    if let Some(repo) = entry["packs_repo"].as_str() {
+        progress("pack", "Packs de texturas", 0, 0);
+        let _ = crate::packs::sync(repo, &dir).await;
+    }
     state.minecraft = minecraft.clone();
     state.loader = fabric.clone().map(|f| format!("fabric {f}")).unwrap_or_else(|| "vanilla".into());
 

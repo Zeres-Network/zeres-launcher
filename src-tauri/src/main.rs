@@ -6,6 +6,7 @@ mod launch;
 mod modpack;
 mod mojang;
 mod net;
+mod packs;
 mod ping;
 mod settings;
 mod theme;
