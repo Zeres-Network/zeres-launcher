@@ -1,5 +1,11 @@
 //! Preparar una instancia (Java, Minecraft, Fabric, modpack) y arrancar el juego entrando directo al servidor.
 
+/// Argumentos de Java por defecto (G1 ajustado para Minecraft con mods).
+const DEFAULT_JVM_ARGS: &str = "-XX:+UseG1GC -XX:+ParallelRefProcEnabled -XX:MaxGCPauseMillis=100 -XX:+UnlockExperimentalVMOptions -XX:+DisableExplicitGC -XX:G1NewSizePercent=30 -XX:G1MaxNewSizePercent=40 -XX:G1HeapRegionSize=8M -XX:G1ReservePercent=20 -XX:G1MixedGCCountTarget=4 -XX:InitiatingHeapOccupancyPercent=15";
+
+/// Los de las versiones 0.1.0-0.1.7 (si el jugador no los cambio, se usan los nuevos).
+const OLD_DEFAULT_JVM_ARGS: &str = "-XX:+UseG1GC -XX:MaxGCPauseMillis=50 -XX:+UnlockExperimentalVMOptions -XX:G1NewSizePercent=20";
+
 use crate::modpack::{self, InstanceState};
 use crate::mojang::{self, Library};
 use crate::net;
@@ -208,8 +214,13 @@ pub fn command(id: &str, prep: &Prepared, acc: &Account, settings: &Settings, se
         ("user_properties", "{}".into()),
     ]);
     let ram = settings.ram.get(id).copied().unwrap_or(4).clamp(1, 32);
-    let mut args: Vec<String> = vec![format!("-Xmx{ram}G"), "-Xms512M".into()];
-    args.extend(settings.jvm_args.split_whitespace().map(String::from));
+    let mut args: Vec<String> = vec![format!("-Xmx{ram}G"), "-Xms1G".into()];
+    if settings.jvm_args.trim().is_empty() || settings.jvm_args.trim() == OLD_DEFAULT_JVM_ARGS {
+        // recolector G1 ajustado para el juego (menos tirones); si el jugador pone los suyos en Ajustes, se usan esos
+        args.extend(DEFAULT_JVM_ARGS.split_whitespace().map(String::from));
+    } else {
+        args.extend(settings.jvm_args.split_whitespace().map(String::from));
+    }
     if let Some(l) = &prep.logging_arg {
         args.push(l.clone());
     }

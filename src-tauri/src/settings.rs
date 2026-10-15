@@ -72,7 +72,7 @@ impl Default for Settings {
             height: 720,
             close_mode: 0,
             java_path: String::new(),
-            jvm_args: "-XX:+UseG1GC -XX:MaxGCPauseMillis=50 -XX:+UnlockExperimentalVMOptions -XX:G1NewSizePercent=20".to_string(),
+            jvm_args: String::new(),
             parallel: 8,
             animated: true,
             channel: 0,

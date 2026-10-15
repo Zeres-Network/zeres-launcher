@@ -100,9 +100,7 @@ async function drawIcons() {
     const id = el.dataset.inst, cv = el.querySelector("canvas");
     cv.width = 48; cv.height = 48;
     const g = cv.getContext("2d");
-    const grd = g.createRadialGradient(24, 20, 4, 24, 24, 34);
-    grd.addColorStop(0, id === "zeres" ? "#4a1418" : "#14304d"); grd.addColorStop(1, "#111112");
-    g.fillStyle = grd; g.fillRect(0, 0, 48, 48);
+    g.clearRect(0, 0, 48, 48);
     if (id === "zeres") {
       g.imageSmoothingEnabled = true;
       g.drawImage(zicon, 3, 3, 42, 42);
@@ -170,8 +168,8 @@ async function renderHome() {
   T("ribbon", INST[current].ribbon);
   T("splash", SPLASHES[splashI], { c: "e" });
   T("instName", "§l" + INST[current].name);
-  T("instInfo", instInfo(current));
-  T("instTime", "§7Tiempo jugado: §f" + fmtTime(instances[current]?.playtime || 0));
+  T("instInfo", MC.fit(instInfo(current).replace("Minecraft ", "MC "), 94));
+  T("instTime", "§7Jugado: §f" + fmtTime(instances[current]?.playtime || 0));
   const [label, mode] = playState();
   T("playT", label, { s: 3 });
   const pb = $("play");
@@ -182,9 +180,29 @@ async function renderHome() {
   drawPlayIcon($("playIco"), "#ffffff");
   const n = Array.isArray(news) && news[0];
   T("news", n ? "§e" + n.tag + " §7· §f" + n.title + " §8- §7" + MC.fit(n.text || "", 280) : "");
+  renderNewsList();
+  for (const id of Object.keys(INST)) {
+    T("lbl-" + id, "§l" + INST[id].name.replace("Zeres ", "").toUpperCase());
+    const st = instances[id]?.state;
+    T("sub-" + id, st === "update" ? "§6Actualización" : st === "install" ? "§eSin instalar" : running.has(id) ? "§aEn juego" : "§bListo");
+  }
   renderServer();
   const acc = activeAccount();
+  T("sideName", acc ? "§l" + acc.name : "§7Sin cuenta");
+  T("sideKind", !acc ? "§ePulsa para añadir" : acc.kind === "microsoft" ? "§aPremium" : "§bSin premium");
+  await drawHead($("sideHead"), acc);
   await drawHead($("headIco"), acc);
+}
+/** Las ultimas novedades en la tarjeta del inicio (hasta 3 lineas). */
+function renderNewsList() {
+  const box = $("newsList");
+  box.innerHTML = "";
+  const list = Array.isArray(news) ? news.slice(0, 3) : [];
+  if (!list.length) { const s = document.createElement("span"); s.className = "t"; box.appendChild(s); T(s, "§7Sin novedades por ahora"); return; }
+  for (const n of list) {
+    const s = document.createElement("span"); s.className = "t"; box.appendChild(s);
+    T(s, MC.fit("§e" + (n.tag || "•") + " §f" + (n.title || ""), 190));
+  }
 }
 function renderServer() {
   const fav = $("favicon").getContext("2d");
@@ -192,7 +210,7 @@ function renderServer() {
   if (!server) { T("srvName", "Zeres Network"); T("srvMotd1", "§8Conectando..."); T("srvMotd2", ""); T("srvPlayers", ""); return; }
   if (!server.online) {
     tex("gui/unknown_server.png").then(i => fav.drawImage(i, 0, 0, 64, 64));
-    T("srvName", "Zeres Network"); T("srvMotd1", "§4No se puede conectar con el servidor"); T("srvMotd2", "§8" + MC.fit(server.error ? server.host + " · " + server.error : server.host, 270)); T("srvPlayers", "");
+    T("srvName", "Zeres Network"); T("srvMotd1", "§4No se puede conectar con el servidor"); T("srvMotd2", "§8" + MC.fit(server.error ? server.host + " · " + server.error : server.host, 225)); T("srvPlayers", "");
     $("pingbar").style.backgroundImage = `url("${TH}gui/server_list/unreachable.png")`;
     return;
   }
@@ -200,8 +218,8 @@ function renderServer() {
   if (st.favicon) img(st.favicon).then(i => fav.drawImage(i, 0, 0, 64, 64)); else tex("gui/unknown_server.png").then(i => fav.drawImage(i, 0, 0, 64, 64));
   const motd = MC.chat(st.description).split("\n");
   T("srvName", "Zeres Network");
-  T("srvMotd1", MC.fit(motd[0] || "", 270), { c: "7" });
-  T("srvMotd2", MC.fit(motd[1] || "", 270), { c: "7" });
+  T("srvMotd1", MC.fit(motd[0] || "", 225), { c: "7" });
+  T("srvMotd2", MC.fit(motd[1] || "", 225), { c: "7" });
   T("srvPlayers", "§7" + (st.players?.online ?? 0) + "§8/§7" + (st.players?.max ?? 0));
   const ms = server.ping, bars = ms < 150 ? 5 : ms < 300 ? 4 : ms < 600 ? 3 : ms < 1000 ? 2 : 1;
   $("pingbar").style.backgroundImage = `url("${TH}gui/server_list/ping_${bars}.png")`;
@@ -237,13 +255,16 @@ async function play(repair = false, launch = true) {
   if (!activeAccount()) { go("profile"); T("status", "§eAñade una cuenta para jugar"); return; }
   const id = current, before = instances[id] || {};
   busy = true; $("progBar").style.width = "0"; renderHome();
+  // si estaba desactualizado (o sin instalar), el boton solo instala/actualiza: el juego se abre al volver a darle
+  const updating = before.state === "update" || before.state === "install";
+  const doLaunch = launch && !updating;
   try {
-    await invoke("play", { id, repair, launch });
-    if (!launch) T("status", "§aArchivos comprobados");
+    await invoke("play", { id, repair, launch: doLaunch });
+    if (!doLaunch) T("status", updating ? "§a¡Listo! Ya está al día · pulsa §lJUGAR" : "§aArchivos comprobados");
     else starting.add(id);
     // si acaba de instalar/actualizar el modpack, se ensenan sus novedades
     if ((before.state === "update" || before.state === "install") && Array.isArray(before.notes) && before.notes.length) {
-      showNews("§6§l¡NOVEDADES!", "§7" + INST[id].name + " §8· §f" + (before.latest || ""), before.notes, "§l¡A JUGAR!");
+      showNews("§6§l¡NOVEDADES!", "§7" + INST[id].name + " §8· §f" + (before.latest || ""), before.notes, "§lVALE");
     }
   } catch (e) {
     T("status", "§c" + MC.fit(String(e), 205));
@@ -341,7 +362,7 @@ function go(v) {
 const TABS = ["Juego", "Launcher", "Instancia"];
 const RES = [[854, 480], [1280, 720], [1600, 900], [1920, 1080]];
 function btn(label, act, cls = "") { return `<button class="mcbtn ${cls}" data-act="${act}"><span class="t" data-t="${label.replace(/"/g, "&quot;")}"></span></button>`; }
-function note(text, c = "8") { return `<div class="note"><span class="t" data-t="${text.replace(/"/g, "&quot;")}" data-c="${c}"></span></div>`; }
+function note(text, c = "8") { return `<div class="note"><span class="t" data-t="${MC.fit(text, 305).replace(/"/g, "&quot;")}" data-c="${c}"></span></div>`; }
 function renderSettings() {
   $("tabs").innerHTML = TABS.map((t, i) => `<div class="tab ${i === tab ? "on" : ""}" data-tab="${i}"><span class="t" data-t="${t}"></span></div>`).join("");
   const s = settings, yes = b => b ? "Sí" : "No", name = INST[current].name;
@@ -355,7 +376,7 @@ function renderSettings() {
     h += btn("Java: " + (s.java_path ? "Personalizado" : "Automático"), "java");
     h += btn("Argumentos por defecto", "jvmreset");
     h += `<label class="field wide" id="jvmField" style="width:100%"><span class="t" id="jvmTxt"></span><input id="jvmInput" spellcheck="false"></label>`;
-    h += note("En automático se descarga el Java oficial de Mojang: no instalas nada.");
+    h += note("En automático se usa el Java oficial de Mojang.");
   } else if (tab === 1) {
     h += btn("Al jugar: " + ["Ocultar launcher", "Cerrar launcher", "No hacer nada"][s.close_mode], "close");
     h += btn("Canal: Beta", "channel", "off");
@@ -426,7 +447,7 @@ async function settingAction(a) {
   if (a === "full") await save({ fullscreen: !s.fullscreen });
   if (a === "res" && !s.fullscreen) { const i = RES.findIndex(r => r[0] === s.width && r[1] === s.height); const n = RES[(i + 1) % RES.length]; await save({ width: n[0], height: n[1] }); }
   if (a === "java" && s.java_path) await save({ java_path: "" });
-  if (a === "jvmreset") await save({ jvm_args: "-XX:+UseG1GC -XX:MaxGCPauseMillis=50 -XX:+UnlockExperimentalVMOptions -XX:G1NewSizePercent=20" });
+  if (a === "jvmreset") await save({ jvm_args: "" });
   if (a === "close") await save({ close_mode: (s.close_mode + 1) % 3 });
   if (a === "dl") await save({ parallel: s.parallel >= 16 ? 2 : s.parallel * 2 });
   if (a === "anim") await save({ animated: !s.animated });
@@ -631,14 +652,9 @@ async function boot() {
   $("wClose").onclick = () => appWindow.close();
   document.querySelectorAll(".inst").forEach(el => {
     el.onclick = () => selectInstance(el.dataset.inst);
-    el.onmouseenter = () => {
-      const tip = $("tip"); tip.innerHTML = "<span class='t'></span><br><span class='t'></span>";
-      const ts = tip.querySelectorAll(".t"); T(ts[0], INST[el.dataset.inst].name); T(ts[1], instInfo(el.dataset.inst));
-      const r = el.getBoundingClientRect(); tip.style.left = r.right + 10 + "px"; tip.style.top = r.top - 30 + 6 + "px"; tip.style.display = "block";
-    };
-    el.onmouseleave = () => $("tip").style.display = "none";
   });
   $("play").onclick = () => play(false, true);
+  $("acct").onclick = () => go("profile");
   $("splash").onclick = () => { splashI = (splashI + 1) % SPLASHES.length; T("splash", SPLASHES[splashI], { c: "e" }); };
   $("bSettings").onclick = () => go($("v-settings").classList.contains("on") ? "home" : "settings");
   $("bProfile").onclick = () => go($("v-profile").classList.contains("on") ? "home" : "profile");

@@ -7,64 +7,86 @@
 </head>
 <body>
 <div class="win">
-  <!-- barra de titulo propia (se arrastra) -->
+  <!-- cabecera del aparato (estilo Pokepad): lente, lucecitas, pestaña con el logo y botones de ventana. Se arrastra. -->
   <header class="bar" data-tauri-drag-region>
-    <img src="img/zeres_network.png" class="bar-logo" alt="" data-tauri-drag-region>
-    <span class="t" id="barTitle" data-tauri-drag-region></span>
-    <span class="beta" id="barBeta" data-tauri-drag-region></span>
+    <i class="lens" data-tauri-drag-region></i>
+    <i class="led r" data-tauri-drag-region></i><i class="led y" data-tauri-drag-region></i><i class="led g" data-tauri-drag-region></i>
+    <span class="sp" data-tauri-drag-region></span>
+    <div class="title-tab" data-tauri-drag-region>
+      <img src="img/zeres_network.png" class="bar-logo" alt="Zeres Network" data-tauri-drag-region>
+    </div>
+    <span class="t beta" id="barBeta" data-tauri-drag-region></span>
+    <span class="t hidden" id="barTitle"></span>
     <span class="sp" data-tauri-drag-region></span>
     <button class="wb" id="wMin" title="Minimizar"><span class="t" id="wMinT"></span></button>
     <button class="wb x" id="wClose" title="Cerrar"><span class="t" id="wCloseT"></span></button>
   </header>
 
   <div class="body">
-    <div class="pano" id="pano"><div class="cube" id="cube"></div></div>
-    <div class="shade"></div>
+    <!-- marco: pantalla izquierda, bisagra y pantalla principal -->
+    <div class="scr scr-left"></div>
+    <div class="hinge"><i></i><i></i><i></i><i></i></div>
+    <div class="scr scr-main">
+      <div class="pano" id="pano"><div class="cube" id="cube"></div></div>
+      <div class="pano-tint"></div>
+    </div>
 
-    <!-- barra lateral: las dos instancias, ajustes y cuenta -->
+    <!-- pantalla izquierda: cuenta y modalidades -->
     <nav class="side">
-      <div class="inst" data-inst="zeres"><canvas width="16" height="16" class="ico"></canvas><i class="mark"></i></div>
-      <div class="inst" data-inst="cobblemon"><canvas width="16" height="16" class="ico"></canvas><i class="mark"></i></div>
-      <span class="sp"></span>
-      <button class="sbtn" id="bNews" title="Novedades"><canvas width="16" height="16" id="newsIco"></canvas></button>
-      <button class="sbtn" id="bSettings" title="Ajustes"><canvas width="16" height="16" id="gearIco"></canvas></button>
-      <button class="sbtn" id="bProfile" title="Perfil"><canvas width="8" height="8" id="headIco"></canvas></button>
+      <span class="t side-title" data-t="§e§lCUENTA"></span>
+      <div class="acct" id="acct" title="Perfil y cuentas">
+        <div class="acct-head"><canvas width="8" height="8" id="sideHead"></canvas></div>
+        <span class="t" id="sideName"></span>
+        <span class="t" id="sideKind"></span>
+      </div>
+      <span class="t side-title" data-t="§e§lMODALIDADES"></span>
+      <div class="inst" data-inst="cobblemon"><canvas width="16" height="16" class="ico"></canvas><span class="t" id="lbl-cobblemon"></span><span class="t" id="sub-cobblemon"></span></div>
+      <div class="inst" data-inst="zeres"><canvas width="16" height="16" class="ico"></canvas><span class="t" id="lbl-zeres"></span><span class="t" id="sub-zeres"></span></div>
     </nav>
     <div class="tip" id="tip"></div>
 
     <!-- ============================================================ INICIO -->
     <main class="view on" id="v-home">
-      <span class="t news" id="news"></span>
       <div class="logo-box">
         <img src="img/zeres_network.png" class="logo" alt="Zeres Network">
         <div class="ribbon"><span class="t" id="ribbon"></span></div>
         <span class="t splash" id="splash"></span>
       </div>
 
-      <div class="server" id="server">
-        <canvas width="64" height="64" id="favicon"></canvas>
+      <div class="card server" id="server">
+        <div class="fav"><canvas width="64" height="64" id="favicon"></canvas></div>
         <div class="srv-txt"><span class="t" id="srvName"></span><span class="t" id="srvMotd1"></span><span class="t" id="srvMotd2"></span></div>
         <div class="srv-right"><span class="t" id="srvPlayers"></span><i class="pingbar" id="pingbar"></i></div>
       </div>
 
+      <div class="card news-card-home">
+        <span class="t card-title" data-t="§e§lNOVEDADES"></span>
+        <div class="news-lines" id="newsList"></div>
+        <span class="t hidden" id="news"></span>
+      </div>
+      <div class="card game-card">
+        <span class="t card-title" data-t="§e§lTU PARTIDA"></span>
+        <span class="t" id="instName"></span>
+        <span class="t" id="instInfo"></span>
+        <span class="t" id="instTime"></span>
+      </div>
+
       <footer class="dock">
-        <div class="dock-info">
-          <span class="t" id="instName"></span>
-          <span class="t" id="instInfo"></span>
-          <span class="t" id="instTime"></span>
-        </div>
-        <div class="dock-play">
-          <span class="t status" id="status"></span>
-          <button class="play" id="play"><i class="fill" id="progBar"></i><canvas width="9" height="9" id="playIco" class="play-ico"></canvas><span class="t" id="playT"></span></button>
-        </div>
+        <span class="t status" id="status"></span>
+        <button class="play" id="play"><i class="fill" id="progBar"></i><canvas width="9" height="9" id="playIco" class="play-ico"></canvas><span class="t" id="playT"></span></button>
       </footer>
+      <div class="navs">
+        <button class="nbtn" id="bNews" title="Novedades"><canvas width="16" height="16" id="newsIco"></canvas></button>
+        <button class="nbtn" id="bSettings" title="Ajustes"><canvas width="16" height="16" id="gearIco"></canvas></button>
+        <button class="nbtn" id="bProfile" title="Perfil"><canvas width="8" height="8" id="headIco"></canvas></button>
+      </div>
     </main>
 
     <!-- ============================================================ AJUSTES -->
     <section class="view menu" id="v-settings">
       <div class="m-head"><div class="tabs" id="tabs"></div></div>
       <div class="m-list" id="setList"></div>
-      <div class="m-foot"><button class="mcbtn w400" data-home><span class="t" data-t="Hecho"></span></button></div>
+      <div class="m-foot"><button class="mcbtn w300" data-home><span class="t" data-t="Hecho"></span></button></div>
     </section>
 
     <!-- ============================================================ PERFIL -->
@@ -72,10 +94,10 @@
       <div class="prof-stage" id="stage">
         <div class="viewer" id="viewer"><div class="player" id="player"></div></div>
         <div class="prof-name"><span class="t" id="pName"></span><span class="t" id="pKind"></span></div>
-        <span class="t prof-hint" data-t="Arrastra para girar" data-c="8"></span>
+        <span class="t prof-hint" data-t="Arrastra para girar" data-c="f"></span>
       </div>
       <div class="prof-side">
-        <span class="t prof-title" data-t="§lCUENTAS"></span>
+        <span class="t prof-title" data-t="§e§lCUENTAS"></span>
         <div class="acc-list" id="accList"></div>
         <div class="prof-add">
           <button class="bbtn green" id="pOff"><span class="t" data-t="+ Sin premium"></span></button>
@@ -87,34 +109,34 @@
 
     <!-- ============================================================ AÑADIR SIN PREMIUM -->
     <section class="view menu" id="v-add">
-      <div class="m-head"><span class="t" data-t="Añadir cuenta sin premium"></span></div>
+      <div class="m-head"><span class="t" data-t="§e§lAñadir cuenta sin premium"></span></div>
       <div class="m-list">
         <div class="form">
-          <span class="t" data-t="Nombre de usuario" data-c="7"></span>
+          <span class="t" data-t="Nombre de usuario" data-c="f"></span>
           <label class="field" id="nameField"><span class="t" id="nameTxt"></span><input id="nameInput" maxlength="16" spellcheck="false" autocomplete="off"></label>
           <span class="t" id="nameErr" data-c="c"></span>
-          <span class="t" data-t="Al entrar en la network te pedirá tu contraseña" data-c="7"></span>
-          <span class="t" data-t="(o crearla la primera vez). Los premium entran directos." data-c="7"></span>
+          <span class="t" data-t="Al entrar en la network te pedirá tu contraseña" data-c="f"></span>
+          <span class="t" data-t="(o crearla la primera vez). Los premium entran directos." data-c="f"></span>
         </div>
       </div>
       <div class="m-foot">
-        <button class="mcbtn w196" id="addOk"><span class="t" data-t="Añadir"></span></button>
+        <button class="mcbtn w196 green" id="addOk"><span class="t" data-t="Añadir"></span></button>
         <button class="mcbtn w196" data-goto="profile"><span class="t" data-t="Cancelar"></span></button>
       </div>
     </section>
 
     <!-- ============================================================ MICROSOFT -->
     <section class="view menu" id="v-ms">
-      <div class="m-head"><span class="t" data-t="Iniciar sesión con Microsoft"></span></div>
+      <div class="m-head"><span class="t" data-t="§e§lIniciar sesión con Microsoft"></span></div>
       <div class="m-list">
         <div class="form center">
-          <span class="t" id="msLine1" data-c="7"></span>
+          <span class="t" id="msLine1" data-c="f"></span>
           <span class="t big" id="msCode"></span>
-          <span class="t" id="msLine2" data-c="7"></span>
+          <span class="t" id="msLine2" data-c="f"></span>
         </div>
       </div>
       <div class="m-foot">
-        <button class="mcbtn w196" id="msOpen"><span class="t" data-t="Abrir la web"></span></button>
+        <button class="mcbtn w196 green" id="msOpen"><span class="t" data-t="Abrir la web"></span></button>
         <button class="mcbtn w196" data-goto="profile"><span class="t" data-t="Cancelar"></span></button>
       </div>
     </section>
