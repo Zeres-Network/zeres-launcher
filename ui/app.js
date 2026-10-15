@@ -12,7 +12,7 @@ const INST = {
   zeres: { name: "Zeres Network", ribbon: "§6§lSURVIVAL  §7·  §6§lSKYBLOCK", tile: "red_nether_bricks" },
   cobblemon: { name: "Zeres Cobblemon", ribbon: "§b§lC O B B L E M O N", tile: "lapis_block" }
 };
-const SPLASHES = ["¡Beta!", "¡100% casero!", "¡Hazte con todos!", "¡Código abierto!", "¡Hecho en Rust!", "¡Sin anuncios!", "¡Survival y Cobblemon!"];
+const SPLASHES = ["¡Beta!", "¡100% casero!", "¡Hazte con todos!", "¡Código abierto!", "¡Hecho en Rust!", "¡Sin anuncios!", "¡Atrápalos ya!"];
 
 let settings = null, appVersion = "0.1.0", msAvailable = false;
 let instances = {}, news = null, server = null;
@@ -168,7 +168,7 @@ async function renderHome() {
   T("ribbon", INST[current].ribbon);
   T("splash", SPLASHES[splashI], { c: "e" });
   T("instName", "§l" + INST[current].name);
-  T("instInfo", MC.fit(instInfo(current).replace("Minecraft ", "MC "), 94));
+  T("instInfo", "§7MC " + (instances[current]?.minecraft || "1.21.1") + (current === "cobblemon" ? " §8· §7Fabric" : " §8· §7Vanilla"));
   T("instTime", "§7Jugado: §f" + fmtTime(instances[current]?.playtime || 0));
   const [label, mode] = playState();
   T("playT", label, { s: 3 });

@@ -115,24 +115,25 @@ button { font: inherit; color: inherit; background: none; border: 0; cursor: poi
 .logo { width: 400px; height: 53px; display: block; margin: 0 auto; filter: drop-shadow(0 4px 0 #0008); }
 .ribbon { display: inline-flex; align-items: center; justify-content: center; margin-top: 12px; padding: 8px 16px 6px; border-radius: 8px;
           background: var(--red-m); box-shadow: 0 0 0 3px var(--red-d), inset 0 2px 0 #ffffff26; }
-.splash { position: absolute; right: -30px; top: 78px; transform: rotate(-14deg); animation: splash .45s ease-in-out infinite alternate; cursor: pointer; }
-@keyframes splash { from { transform: rotate(-14deg) scale(1); } to { transform: rotate(-14deg) scale(1.08); } }
+.splash { position: absolute; left: 404px; top: 46px; transform: translate(-50%, -50%) rotate(-14deg); animation: splash .45s ease-in-out infinite alternate; cursor: pointer; white-space: nowrap; }
+@keyframes splash { from { transform: translate(-50%, -50%) rotate(-14deg) scale(1); } to { transform: translate(-50%, -50%) rotate(-14deg) scale(1.08); } }
 
-.server { left: 20px; top: 240px; width: 638px; height: 80px; padding: 8px; display: flex; gap: 10px; }
+.server { left: 20px; top: 236px; width: 638px; height: 76px; padding: 6px; display: flex; gap: 10px; }
 .fav { width: 64px; height: 64px; flex: none; border-radius: 6px; background: var(--navy2); box-shadow: 0 0 0 2px var(--out); }
 .server canvas { width: 64px; height: 64px; display: block; }
 .srv-txt { display: flex; flex-direction: column; gap: 4px; padding-top: 3px; }
 .srv-right { position: absolute; right: 12px; top: 10px; display: flex; gap: 8px; align-items: flex-start; }
 .pingbar { width: 20px; height: 16px; background-size: 20px 16px; image-rendering: pixelated; }
 
-.news-card-home { left: 20px; top: 332px; width: 412px; height: 98px; padding: 9px 12px; display: flex; flex-direction: column; gap: 5px; }
+.news-card-home { left: 20px; top: 324px; width: 376px; height: 92px; padding: 7px 12px; display: flex; flex-direction: column; gap: 5px; }
 .news-lines { display: flex; flex-direction: column; gap: 6px; }
-.game-card { left: 444px; top: 332px; width: 214px; height: 98px; padding: 9px 12px; display: flex; flex-direction: column; gap: 6px; }
+.game-card { left: 408px; top: 324px; width: 250px; height: 92px; padding: 7px 12px; display: flex; flex-direction: column; gap: 4px; }
 
-.dock { position: absolute; left: 20px; top: 436px; width: 460px; display: flex; flex-direction: column; gap: 6px; }
-.status { min-height: 16px; padding-left: 4px; }
+.dock { position: absolute; left: 20px; top: 444px; width: 434px; height: 44px; }
+/* el estado va encima del boton, en la franja entre las tarjetas y el boton */
+.status { position: absolute; left: 4px; bottom: 48px; min-height: 16px; }
 /* boton grande del Pokepad: verde JUGAR, amarillo ACTUALIZAR; la barra de progreso va dentro */
-.play { position: relative; width: 100%; height: 48px; display: flex; align-items: center; justify-content: center; gap: 12px; cursor: pointer;
+.play { position: relative; width: 100%; height: 44px; display: flex; align-items: center; justify-content: center; gap: 12px; cursor: pointer;
         overflow: hidden; border-radius: 9px; background: linear-gradient(#5bd47a, #2a8a44);
         box-shadow: 0 0 0 2px var(--out), inset 0 0 0 3px #9cf0b0, inset 0 -5px 0 #0003; transition: transform .05s; }
 .play:hover { filter: brightness(1.08); box-shadow: 0 0 0 2px var(--out), inset 0 0 0 3px #ffffff, inset 0 -5px 0 #0003; }
@@ -146,10 +147,10 @@ button { font: inherit; color: inherit; background: none; border: 0; cursor: poi
 .play .play-ico { width: 27px; height: 27px; }
 
 /* botones de navegacion del Pokepad (novedades, ajustes, perfil) */
-.navs { position: absolute; right: 20px; top: 456px; display: flex; gap: 8px; }
-.nbtn { width: 52px; height: 48px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; border-radius: 9px;
+.navs { position: absolute; right: 20px; top: 444px; display: flex; gap: 12px; }
+.nbtn { width: 56px; height: 44px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; border-radius: 9px;
         background: linear-gradient(var(--card1), var(--card2)); box-shadow: 0 0 0 2px var(--out), inset 0 0 0 2px #3c8fdc, inset 0 -4px 0 #0003; }
-.nbtn canvas { width: 30px; height: 30px; }
+.nbtn canvas { width: 28px; height: 28px; }
 .nbtn:hover, .nbtn.on { box-shadow: 0 0 0 2px var(--out), inset 0 0 0 2px var(--sel), inset 0 -4px 0 #0003; filter: brightness(1.1); }
 
 /* menus (ajustes, cuentas...) dentro de la pantalla */
