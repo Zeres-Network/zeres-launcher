@@ -115,6 +115,8 @@ button { font: inherit; color: inherit; background: none; border: 0; cursor: poi
 .logo { width: 400px; height: 53px; display: block; margin: 0 auto; filter: drop-shadow(0 4px 0 #0008); }
 .ribbon { display: inline-flex; align-items: center; justify-content: center; margin-top: 12px; padding: 8px 16px 6px; border-radius: 8px;
           background: var(--red-m); box-shadow: 0 0 0 3px var(--red-d), inset 0 2px 0 #ffffff26; }
+.ribbon-img { display: block; height: 48px; margin: 12px auto 0; image-rendering: pixelated; filter: drop-shadow(0 4px 0 #0008); }
+.ribbon[hidden], .ribbon-img[hidden] { display: none; }
 .splash { position: absolute; left: 404px; top: 46px; transform: translate(-50%, -50%) rotate(-14deg); animation: splash .45s ease-in-out infinite alternate; cursor: pointer; white-space: nowrap; }
 @keyframes splash { from { transform: translate(-50%, -50%) rotate(-14deg) scale(1); } to { transform: translate(-50%, -50%) rotate(-14deg) scale(1.08); } }
 

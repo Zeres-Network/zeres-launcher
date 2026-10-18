@@ -10,7 +10,8 @@ const $ = id => document.getElementById(id);
 
 const INST = {
   zeres: { name: "Zeres Network", ribbon: "§6§lSURVIVAL  §7·  §6§lSKYBLOCK", tile: "red_nether_bricks" },
-  cobblemon: { name: "Zeres Cobblemon", ribbon: "§b§lC O B B L E M O N", tile: "lapis_block" }
+  // ribbonImg: el mismo rotulo que el titulo del scoreboard del servidor (glifo zeres_logo_scoreboard de Oraxen)
+  cobblemon: { name: "Zeres Cobblemon", ribbon: "§b§lC O B B L E M O N", ribbonImg: "img/cobblemon.png", tile: "lapis_block" }
 };
 const SPLASHES = ["¡Beta!", "¡100% casero!", "¡Hazte con todos!", "¡Código abierto!", "¡Hecho en Rust!", "¡Sin anuncios!", "¡Atrápalos ya!"];
 
@@ -166,6 +167,9 @@ function playState() {
 async function renderHome() {
   document.querySelectorAll(".inst").forEach(el => el.classList.toggle("on", el.dataset.inst === current));
   T("ribbon", INST[current].ribbon);
+  const rImg = $("ribbonImg"), rTxt = document.querySelector(".logo-box .ribbon");
+  if (INST[current].ribbonImg) { rImg.src = INST[current].ribbonImg; rImg.hidden = false; rTxt.hidden = true; }
+  else { rImg.hidden = true; rTxt.hidden = false; }
   T("splash", SPLASHES[splashI], { c: "e" });
   T("instName", "§l" + INST[current].name);
   T("instInfo", "§7MC " + (instances[current]?.minecraft || "1.21.1") + (current === "cobblemon" ? " §8· §7Fabric" : " §8· §7Vanilla"));
