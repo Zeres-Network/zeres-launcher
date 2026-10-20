@@ -27,6 +27,7 @@ struct App {
     busy: AtomicBool,
     manifest: Mutex<Option<Value>>,
     /// instancias con el juego abierto (no se puede lanzar la misma dos veces)
+    /// juegos abiertos, como "instancia:uuid de la cuenta" (se puede jugar a la vez con varias cuentas)
     running: Mutex<std::collections::HashSet<String>>,
 }
 
@@ -230,11 +231,13 @@ async fn run_play(handle: &AppHandle, app: &Arc<App>, id: &str, repair: bool, la
     let emit = |stage: &str, text: &str, d: usize, t: usize| {
         let _ = handle.emit("progress", json!({"id": id, "stage": stage, "text": text, "done": d, "total": t}));
     };
-    if app.running.lock().unwrap().contains(id) {
-        return Err(anyhow::anyhow!("Minecraft ya está abierto"));
-    }
     let mut s = snapshot(app);
     let acc = s.active_account().cloned().ok_or_else(|| anyhow::anyhow!("Añade una cuenta en Perfil antes de jugar"))?;
+    // una partida por cuenta: con otra cuenta (Perfil) se puede abrir otro Minecraft a la vez
+    let key = format!("{id}:{}", acc.uuid);
+    if app.running.lock().unwrap().contains(&key) {
+        return Err(anyhow::anyhow!("{} ya está jugando. Cambia de cuenta en Perfil para abrir otro Minecraft", acc.name));
+    }
     emit("manifest", "Buscando actualizaciones", 0, 0);
     let manifest = load_manifest(app, true).await.map_err(|e| anyhow::anyhow!(e))?;
     let entry = manifest["instances"][id].clone();
@@ -266,12 +269,12 @@ async fn run_play(handle: &AppHandle, app: &Arc<App>, id: &str, repair: bool, la
     let mut cmd = launch::command(id, &prep, &acc, &s, None);
     let log_dir = launch::instance_dir(id).join("logs");
     std::fs::create_dir_all(&log_dir)?;
-    let log_path = log_dir.join("zeres-launcher.log");
+    let log_path = log_dir.join(format!("zeres-launcher-{}.log", acc.name)); // uno por cuenta: no se pisan
     let log = std::fs::File::create(&log_path)?;
     cmd.stdout(log.try_clone()?).stderr(log);
     emit("launch", "Abriendo Minecraft", 0, 0);
     let mut child = cmd.spawn().map_err(|e| anyhow::anyhow!("No se pudo abrir Java: {e}"))?;
-    app.running.lock().unwrap().insert(id.to_string());
+    app.running.lock().unwrap().insert(key.clone());
     let h = handle.clone();
     let idc = id.to_string();
     let close_mode = s.close_mode;
@@ -289,7 +292,7 @@ async fn run_play(handle: &AppHandle, app: &Arc<App>, id: &str, repair: bool, la
                 let found = String::from_utf8_lossy(&log).contains("Sound engine started");
                 if found || started.elapsed().as_secs() > 180 {
                     ready = true;
-                    let _ = h.emit("game-ready", json!({"id": idc}));
+                    let _ = h.emit("game-ready", json!({"id": idc, "key": key}));
                     match close_mode {
                         1 => h.exit(0),
                         0 => {
@@ -312,12 +315,12 @@ async fn run_play(handle: &AppHandle, app: &Arc<App>, id: &str, repair: bool, la
             st.save();
             t
         };
-        app2.running.lock().unwrap().remove(&idc);
+        app2.running.lock().unwrap().remove(&key);
         if let Some(w) = h.get_webview_window("main") {
             let _ = w.show();
             let _ = w.set_focus();
         }
-        let _ = h.emit("game-exit", json!({"id": idc, "code": code, "played": played, "total": total}));
+        let _ = h.emit("game-exit", json!({"id": idc, "key": key, "code": code, "played": played, "total": total}));
     });
     emit("starting", "Abriendo Minecraft...", 0, 0);
     Ok(())

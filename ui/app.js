@@ -18,7 +18,12 @@ const SPLASHES = ["¡Beta!", "¡100% casero!", "¡Hazte con todos!", "¡Código 
 let settings = null, appVersion = "0.1.0", msAvailable = false;
 let instances = {}, news = null, server = null;
 let current = "zeres", busy = false, splashI = 0, tab = 0, selAcc = null;
+// running: "instancia:uuid" de cada Minecraft abierto (uno por cuenta); starting: instancias abriendose
 const running = new Set(), starting = new Set();
+/** Instancia con algun Minecraft abierto (con cualquier cuenta). */
+function anyRunning(id) { return [...running].some(k => k.startsWith(id + ":")); }
+/** Esta cuenta ya juega en esta instancia. */
+function accountRunning(id) { const a = activeAccount(); return !!a && running.has(id + ":" + a.uuid); }
 
 /* ================================================================== utilidades */
 function T(el, text, opt) { MC.set(typeof el === "string" ? $(el) : el, text, opt); }
@@ -157,7 +162,7 @@ function playState() {
   const i = instances[current];
   if (busy) return ["§lPREPARANDO", "busy"];
   if (starting.has(current)) return ["§lABRIENDO...", "off"];
-  if (running.has(current)) return ["§lEN JUEGO", "off"];
+  if (accountRunning(current)) return ["§lEN JUEGO", "off"];
   if (!i) return ["§lJUGAR", "play"];
   if (i.state === "install") return ["§lINSTALAR", "upd"];
   if (i.state === "update") return ["§lACTUALIZAR", "upd"];
@@ -188,7 +193,7 @@ async function renderHome() {
   for (const id of Object.keys(INST)) {
     T("lbl-" + id, "§l" + INST[id].name.replace("Zeres ", "").toUpperCase());
     const st = instances[id]?.state;
-    T("sub-" + id, st === "update" ? "§6Actualización" : st === "install" ? "§eSin instalar" : running.has(id) ? "§aEn juego" : "§bListo");
+    T("sub-" + id, st === "update" ? "§6Actualización" : st === "install" ? "§eSin instalar" : anyRunning(id) ? "§aEn juego" : "§bListo");
   }
   renderServer();
   const acc = activeAccount();
@@ -283,12 +288,12 @@ listen("progress", p => {
   T("status", MC.fit(p.stage === "running" ? "§a" + txt : "§7" + txt, 205));
 });
 listen("game-ready", p => {
-  starting.delete(p.id); running.add(p.id);
+  starting.delete(p.id); running.add(p.key || p.id);
   if (p.id === current) T("status", "§aMinecraft abierto · ¡a jugar!");
   renderHome();
 });
 listen("game-exit", p => {
-  starting.delete(p.id); running.delete(p.id);
+  starting.delete(p.id); running.delete(p.key || p.id);
   if (instances[p.id]) instances[p.id].playtime = p.total;
   T("status", p.code === 0 ? "§7Has jugado " + fmtTime(p.played || 0) : "§cMinecraft se cerró con un error (código " + p.code + ")");
   renderHome();
