@@ -216,7 +216,8 @@ function renderNewsList() {
 function renderServer() {
   const fav = $("favicon").getContext("2d");
   fav.imageSmoothingEnabled = false; fav.clearRect(0, 0, 64, 64);
-  if (!server) { T("srvName", "Zeres Network"); T("srvMotd1", "§8Conectando..."); T("srvMotd2", ""); T("srvPlayers", ""); return; }
+  stopPinging();
+  if (!server) { T("srvName", "Zeres Network"); T("srvMotd1", "§8Conectando..."); T("srvMotd2", ""); T("srvPlayers", ""); startPinging(); return; }
   if (!server.online) {
     tex("gui/unknown_server.png").then(i => fav.drawImage(i, 0, 0, 64, 64));
     T("srvName", "Zeres Network"); T("srvMotd1", "§4No se puede conectar con el servidor"); T("srvMotd2", "§8" + MC.fit(server.error ? server.host + " · " + server.error : server.host, 225)); T("srvPlayers", "");
@@ -227,9 +228,16 @@ function renderServer() {
   if (st.favicon) img(st.favicon).then(i => fav.drawImage(i, 0, 0, 64, 64)); else tex("gui/unknown_server.png").then(i => fav.drawImage(i, 0, 0, 64, 64));
   const motd = MC.chat(st.description).split("\n");
   T("srvName", "Zeres Network");
-  T("srvMotd1", MC.fit(motd[0] || "", 225), { c: "7" });
-  T("srvMotd2", MC.fit(motd[1] || "", 225), { c: "7" });
-  T("srvPlayers", "§7" + (st.players?.online ?? 0) + "§8/§7" + (st.players?.max ?? 0));
+  if (server.maintenance) {
+    // /mantenimiento en el servidor: solo entra el staff
+    T("srvMotd1", "§c§lEN MANTENIMIENTO", { c: "7" });
+    T("srvMotd2", MC.fit(motd[1] || "Vuelve a intentarlo más tarde", 225), { c: "7" });
+    T("srvPlayers", "§6Solo staff");
+  } else {
+    T("srvMotd1", MC.fit(motd[0] || "", 225), { c: "7" });
+    T("srvMotd2", MC.fit(motd[1] || "", 225), { c: "7" });
+    T("srvPlayers", "§7" + (st.players?.online ?? 0) + "§8/§7" + (st.players?.max ?? 0));
+  }
   const ms = server.ping, bars = ms < 150 ? 5 : ms < 300 ? 4 : ms < 600 ? 3 : ms < 1000 ? 2 : 1;
   $("pingbar").style.backgroundImage = `url("${TH}gui/server_list/ping_${bars}.png")`;
   $("pingbar").title = ms + " ms";
@@ -243,9 +251,19 @@ async function refreshInstances(force) {
   } catch (e) { T("status", "§c" + MC.fit(String(e), 200)); }
   renderHome();
 }
-let serverRetry = null;
-async function refreshServer() {
+let serverRetry = null, pinging = null, lastPing = 0, playWarn = 0;
+/** Barras animadas mientras se comprueba el servidor (como la lista de servidores de Minecraft). */
+function startPinging() {
+  let k = 0;
+  clearInterval(pinging);
+  pinging = setInterval(() => { $("pingbar").style.backgroundImage = `url("${TH}gui/server_list/pinging_${(k++ % 5) + 1}.png")`; }, 100);
+}
+function stopPinging() { clearInterval(pinging); pinging = null; }
+async function refreshServer(manual) {
+  if (manual) { T("srvMotd1", "§8Comprobando..."); T("srvMotd2", ""); T("srvPlayers", ""); startPinging(); }
   try { server = await invoke("server_status"); } catch (e) { server = { online: false, host: "zerescobblemon.holy.gg", error: String(e) }; }
+  if (server.online) server.maintenance = /mantenimiento/i.test(MC.chat(server.status?.description).replace(/§./g, ""));
+  lastPing = Date.now();
   renderServer();
   clearTimeout(serverRetry);
   if (!server.online) serverRetry = setTimeout(refreshServer, 8000); // mientras no conecte, reintenta cada 8 s
@@ -263,10 +281,21 @@ async function play(repair = false, launch = true) {
   if (busy) return;
   if (!activeAccount()) { go("profile"); T("status", "§eAñade una cuenta para jugar"); return; }
   const id = current, before = instances[id] || {};
-  busy = true; $("progBar").style.width = "0"; renderHome();
   // si estaba desactualizado (o sin instalar), el boton solo instala/actualiza: el juego se abre al volver a darle
   const updating = before.state === "update" || before.state === "install";
   const doLaunch = launch && !updating;
+  // servidor caido o en mantenimiento: se avisa antes de abrir el juego (otro clic en 15 s = entrar igualmente)
+  if (doLaunch && !repair) {
+    if (!server || Date.now() - lastPing > 15000) await refreshServer(true);
+    if (server && (!server.online || server.maintenance) && Date.now() - playWarn > 15000) {
+      playWarn = Date.now();
+      T("status", server.maintenance ? "§6Servidor en mantenimiento · pulsa §lJUGAR§6 otra vez para entrar igualmente"
+        : "§cEl servidor no responde ahora · pulsa §lJUGAR§c otra vez para entrar igualmente");
+      return;
+    }
+  }
+  playWarn = 0;
+  busy = true; $("progBar").style.width = "0"; renderHome();
   try {
     await invoke("play", { id, repair, launch: doLaunch });
     if (!doLaunch) T("status", updating ? "§a¡Listo! Ya está al día · pulsa §lJUGAR" : "§aArchivos comprobados");
@@ -663,6 +692,7 @@ async function boot() {
     el.onclick = () => selectInstance(el.dataset.inst);
   });
   $("play").onclick = () => play(false, true);
+  $("srvRefresh").onclick = () => { if (!pinging) refreshServer(true); };
   $("acct").onclick = () => go("profile");
   $("splash").onclick = () => { splashI = (splashI + 1) % SPLASHES.length; T("splash", SPLASHES[splashI], { c: "e" }); };
   $("bSettings").onclick = () => go($("v-settings").classList.contains("on") ? "home" : "settings");
