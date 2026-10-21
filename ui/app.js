@@ -483,7 +483,9 @@ function renderSettings() {
   bindField("manField", "manInput", "manTxt", settings.manifest_url, 290, v => save({ manifest_url: v }));
   bindField("staffField", "staffInput", "staffTxt", "", 290, async v => {
     try { staff = await invoke("set_staff_code", { code: v }); } catch (e) { T("status", "§c" + MC.fit(String(e), 200)); return; }
-    T("status", staff.staff ? "§aCódigo de staff correcto · " + staff.name : v ? "§cEse código no vale para esta cuenta" : "§7Código de staff quitado");
+    const why = { sin_cuenta: "Inicia sesión en Perfil con tu cuenta antes de poner el código", sin_lista: "No se ha podido descargar la lista de staff: revisa la conexión",
+      codigo: "Ese código no existe", cuenta: "Ese código es de otra cuenta: cambia de cuenta en Perfil", premium: "Ese código es para tu cuenta Microsoft (premium)" };
+    T("status", staff.staff ? "§aCódigo de staff correcto · " + staff.name : v ? "§c" + (why[staff.reason] || "Ese código no vale para esta cuenta") : "§7Código de staff quitado");
     renderSettings();
   }, true);
 }

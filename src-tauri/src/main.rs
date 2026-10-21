@@ -62,58 +62,80 @@ const DEV_UPDATES: &str = "https://github.com/Zeres-Network/zeres-launcher/relea
 /// Nombre del staff si la cuenta activa y su codigo estan en la lista "staff" del manifest:
 /// [{"name": "Dayscraft", "uuid": "(opcional, solo cuentas premium)", "code_sha256": "..."}]. Cada uno tiene su codigo:
 /// para quitarle el acceso a uno basta con borrar su linea del manifest.
-fn staff_name(m: Option<&Value>, s: &Settings) -> Option<String> {
-    use sha2::{Digest, Sha256};
-    let code = s.staff_code.trim();
-    if code.is_empty() {
-        return None;
+/// El codigo tal y como se genera ("ZERES-XXXX-XXXX-XXXX"): sin espacios, en mayusculas y con el prefijo si falta.
+fn normalize_code(code: &str) -> String {
+    let c: String = code.chars().filter(|c| !c.is_whitespace()).collect::<String>().to_uppercase();
+    if !c.is_empty() && !c.starts_with("ZERES-") {
+        format!("ZERES-{c}")
+    } else {
+        c
     }
-    let acc = s.active_account()?;
+}
+
+/// Ok(nombre) si es staff; Err(motivo): "sin_codigo", "sin_cuenta", "sin_lista", "codigo" (no esta en la lista),
+/// "cuenta" (el codigo es de otro nombre) o "premium" (el codigo pide su cuenta Microsoft).
+fn staff_name(m: Option<&Value>, s: &Settings) -> Result<String, &'static str> {
+    use sha2::{Digest, Sha256};
+    let code = normalize_code(&s.staff_code);
+    if code.is_empty() {
+        return Err("sin_codigo");
+    }
+    let acc = s.active_account().ok_or("sin_cuenta")?;
     let hash = hex::encode(Sha256::digest(code.as_bytes()));
-    for e in m?["staff"].as_array()? {
-        let name_ok = e["name"].as_str().is_some_and(|n| n.eq_ignore_ascii_case(&acc.name));
+    let list = m.and_then(|m| m["staff"].as_array()).ok_or("sin_lista")?;
+    let mut reason = "codigo";
+    for e in list {
+        if !e["code_sha256"].as_str().is_some_and(|h| h.eq_ignore_ascii_case(&hash)) {
+            continue;
+        }
+        if !e["name"].as_str().is_some_and(|n| n.eq_ignore_ascii_case(&acc.name)) {
+            reason = "cuenta";
+            continue;
+        }
         let uuid_ok = match e["uuid"].as_str() {
             Some(u) if !u.is_empty() => acc.kind == "microsoft" && u.replace('-', "").eq_ignore_ascii_case(&acc.uuid.replace('-', "")),
             _ => true,
         };
-        let code_ok = e["code_sha256"].as_str().is_some_and(|h| h.eq_ignore_ascii_case(&hash));
-        if name_ok && uuid_ok && code_ok {
-            return Some(acc.name.clone());
+        if !uuid_ok {
+            reason = "premium";
+            continue;
         }
+        return Ok(acc.name.clone());
     }
-    None
+    Err(reason)
 }
 
 /// Estado del staff y del canal; si ya no es staff (codigo quitado, otra cuenta), vuelve a beta.
-async fn staff_check(app: &App) -> Value {
-    let m = load_manifest(app, false).await.ok();
+async fn staff_check(app: &App, refresh: bool) -> Value {
+    let m = load_manifest(app, refresh).await.ok();
     let mut s = app.settings.lock().unwrap();
     let staff = staff_name(m.as_ref(), &s);
-    if staff.is_none() && s.channel == 2 {
+    if staff.is_err() && s.channel == 2 {
         s.channel = 0;
         s.save();
     }
-    json!({"staff": staff.is_some(), "name": staff, "channel": if s.channel == 2 { "dev" } else { "beta" }, "hasCode": !s.staff_code.is_empty()})
+    json!({"staff": staff.is_ok(), "name": staff.as_ref().ok(), "reason": staff.as_ref().err(),
+           "channel": if s.channel == 2 { "dev" } else { "beta" }, "hasCode": !s.staff_code.is_empty()})
 }
 
 #[tauri::command]
 async fn staff_status(app: St<'_>) -> Result<Value, String> {
-    Ok(staff_check(&app).await)
+    Ok(staff_check(&app, false).await)
 }
 
 #[tauri::command]
 async fn set_staff_code(app: St<'_>, code: String) -> Result<Value, String> {
     {
         let mut s = app.settings.lock().unwrap();
-        s.staff_code = code.trim().to_string();
+        s.staff_code = normalize_code(&code);
         s.save();
     }
-    Ok(staff_check(&app).await)
+    Ok(staff_check(&app, true).await)
 }
 
 #[tauri::command]
 async fn set_channel(app: St<'_>, dev: bool) -> Result<Value, String> {
-    let st = staff_check(&app).await;
+    let st = staff_check(&app, false).await;
     if dev && !st["staff"].as_bool().unwrap_or(false) {
         return Err("El canal dev es solo para el staff".into());
     }
@@ -122,7 +144,7 @@ async fn set_channel(app: St<'_>, dev: bool) -> Result<Value, String> {
         s.channel = if dev { 2 } else { 0 };
         s.save();
     }
-    Ok(staff_check(&app).await)
+    Ok(staff_check(&app, false).await)
 }
 
 /// Actualizador del canal elegido. Instala cualquier version distinta de la actual (asi se puede volver de dev a beta).
