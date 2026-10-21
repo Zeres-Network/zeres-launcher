@@ -100,29 +100,43 @@ function drawPlayIcon(cv, color) {
   const g = cv.getContext("2d"); g.clearRect(0, 0, 9, 9);
   pixels(g, PLAY, { "#": color });
 }
+/** Poke Ball de 16x16 (la misma que el icono "cobblemon" de Discord). */
+const BALL16 = [".....KKKKKK.....", "...KKRRRRRRKK...", "..KRRRRRRRRRRK..", ".KRLLRRRRRRRRRK.", ".KRLRRRRRRRRRDK.", "KRRRRRRRRRRRRDDK",
+  "KRRRRRKKKKRRRDDK", "KKKKKKKWWKKKKKKK", "KKKKKKKWWKKKKKKK", "KWWWWWKKKKWWWGGK", "KWWWWWWWWWWWWGGK", ".KWWWWWWWWWWWGK.",
+  ".KWWWWWWWWWWGGK.", "..KWWWWWWWWGGK..", "...KKGGGGGGKK...", ".....KKKKKK....."];
+/** Loseta de 64x64 con degradado, borde y relieve (fondo de los iconos de instancia). */
+function tile(g, c0, c1) {
+  const gr = g.createRadialGradient(32, 28, 4, 32, 32, 46);
+  gr.addColorStop(0, c0); gr.addColorStop(1, c1);
+  g.fillStyle = gr; g.fillRect(0, 0, 64, 64);
+  for (let y = 0; y < 64; y += 4) for (let x = 0; x < 64; x += 4) { g.fillStyle = `rgba(255,255,255,${((x * 7 + y * 13) % 5) * 0.012})`; g.fillRect(x, y, 4, 4); }
+  g.fillStyle = "#ffffff30"; g.fillRect(2, 2, 60, 2); g.fillRect(2, 2, 2, 60);
+  g.fillStyle = "#00000050"; g.fillRect(2, 60, 60, 2); g.fillRect(60, 2, 2, 60);
+  g.strokeStyle = "#000"; g.lineWidth = 2; g.strokeRect(1, 1, 62, 62);
+}
 async function drawIcons() {
   const zicon = await img("img/zeres_icon.png");
   for (const el of document.querySelectorAll(".inst")) {
     const id = el.dataset.inst, cv = el.querySelector("canvas");
-    cv.width = 48; cv.height = 48;
+    cv.width = 64; cv.height = 64;
     const g = cv.getContext("2d");
-    g.clearRect(0, 0, 48, 48);
+    g.clearRect(0, 0, 64, 64);
     if (id === "zeres") {
+      tile(g, "#3a3a42", "#0b0b0e");
+      const glow = g.createRadialGradient(32, 32, 2, 32, 32, 30);
+      glow.addColorStop(0, "#ff3b3b70"); glow.addColorStop(1, "#ff3b3b00");
+      g.fillStyle = glow; g.fillRect(3, 3, 58, 58);
       g.imageSmoothingEnabled = true;
-      g.drawImage(zicon, 3, 3, 42, 42);
+      g.globalAlpha = 0.55; g.filter = "brightness(0)"; g.drawImage(zicon, 9, 11, 48, 48); g.filter = "none"; g.globalAlpha = 1;
+      g.drawImage(zicon, 7, 7, 50, 50);
     } else {
+      tile(g, "#3a80cc", "#0e2648");
       g.imageSmoothingEnabled = false;
-      const c = document.createElement("canvas"); c.width = 16; c.height = 16;
-      const cg = c.getContext("2d");
-      pixels(cg, BALL, { "#": "#e3262f", h: "#ff9a9a", o: "#111", w: "#fff" });
-      cg.fillStyle = "#f2f2f2";
-      [[8, 1, 6], [8, 9, 14], [9, 1, 14], [10, 2, 13], [11, 2, 13], [12, 3, 12], [13, 5, 10]].forEach(([y, a, b]) => cg.fillRect(a, y, b - a + 1, 1));
-      cg.fillStyle = "#111"; cg.fillRect(6, 7, 4, 1); cg.fillRect(6, 8, 1, 1); cg.fillRect(9, 8, 1, 1);
-      g.drawImage(c, 0, 0, 16, 16, 4, 4, 40, 40);
+      g.fillStyle = "#00000060"; g.fillRect(14, 52, 36, 4);
+      const pal = { K: "#1a1a1a", R: "#e3352b", L: "#ff7b6b", D: "#b8261e", W: "#f2f4f7", G: "#c9ced6" };
+      BALL16.forEach((r, y) => [...r].forEach((c, x) => { if (pal[c]) { g.fillStyle = pal[c]; g.fillRect(8 + x * 3, 6 + y * 3, 3, 3); } }));
     }
   }
-  drawGear($("gearIco"));
-  drawNewsIcon($("newsIco"));
 }
 async function skinOf(acc) {
   if (acc && acc.skin_url) { try { return await img(acc.skin_url); } catch (_) { } }
@@ -160,58 +174,44 @@ function instInfo(id) {
 /** [texto, modo] del boton grande: modo "play", "upd", "off". */
 function playState() {
   const i = instances[current];
-  if (busy) return ["§lPREPARANDO", "busy"];
-  if (starting.has(current)) return ["§lABRIENDO...", "off"];
-  if (accountRunning(current)) return ["§lEN JUEGO", "off"];
-  if (!i) return ["§lJUGAR", "play"];
-  if (i.state === "install") return ["§lINSTALAR", "upd"];
-  if (i.state === "update") return ["§lACTUALIZAR", "upd"];
-  if (i.state === "offline" && !i.installed) return ["§lSIN CONEXIÓN", "off"];
-  return ["§lJUGAR", "play"];
+  if (busy) return ["§ePreparando...", "busy"];
+  if (starting.has(current)) return ["§7Abriendo...", "off"];
+  if (accountRunning(current)) return ["§7En juego", "off"];
+  if (!i) return ["§eJugar", "play"];
+  if (i.state === "install") return ["§6Instalar", "upd"];
+  if (i.state === "update") return ["§6Actualizar", "upd"];
+  if (i.state === "offline" && !i.installed) return ["§7Sin conexión", "off"];
+  return ["§eJugar", "play"];
+}
+/** Las dos lineas grises de cada instancia en la lista (como "Elegir mundo"). */
+function instLines(id) {
+  const i = instances[id] || {}, played = "Jugado: " + fmtTime(i.playtime || 0);
+  const l1 = "§7Minecraft " + (i.minecraft || "1.21.1") + (id === "cobblemon" ? " · Fabric" + (i.mods ? " · " + i.mods + " mods" : "") : " · Vanilla");
+  let l2 = id === "cobblemon" ? "§7" + played + (i.installed ? " · pack " + i.installed : "") : "§7Survival y SkyBlock · " + played;
+  if (anyRunning(id)) l2 = "§aEn juego §7· " + played;
+  else if (i.state === "update") l2 = "§6Actualización disponible" + (i.latest ? " §7· pack " + i.latest : "");
+  else if (i.state === "install") l2 = "§eSin instalar §7· pulsa Instalar";
+  return [l1, l2];
 }
 async function renderHome() {
   document.querySelectorAll(".inst").forEach(el => el.classList.toggle("on", el.dataset.inst === current));
-  T("ribbon", INST[current].ribbon);
-  const rImg = $("ribbonImg"), rTxt = document.querySelector(".logo-box .ribbon");
-  if (INST[current].ribbonImg) { rImg.src = INST[current].ribbonImg; rImg.hidden = false; rTxt.hidden = true; }
-  else { rImg.hidden = true; rTxt.hidden = false; }
   T("splash", SPLASHES[splashI], { c: "e" });
-  T("instName", "§l" + INST[current].name);
-  T("instInfo", "§7MC " + (instances[current]?.minecraft || "1.21.1") + (current === "cobblemon" ? " §8· §7Fabric" : " §8· §7Vanilla"));
-  T("instTime", "§7Jugado: §f" + fmtTime(instances[current]?.playtime || 0));
   const [label, mode] = playState();
-  T("playT", label, { s: 3 });
+  T("playT", label);
   const pb = $("play");
   pb.classList.toggle("upd", mode === "upd");
   pb.classList.toggle("busy", mode === "busy");
   pb.disabled = mode === "busy" || mode === "off";
-  $("playIco").style.display = mode === "play" ? "" : "none";
-  drawPlayIcon($("playIco"), "#ffffff");
-  const n = Array.isArray(news) && news[0];
-  T("news", n ? "§e" + n.tag + " §7· §f" + n.title + " §8- §7" + MC.fit(n.text || "", 280) : "");
-  renderNewsList();
   for (const id of Object.keys(INST)) {
-    T("lbl-" + id, "§l" + INST[id].name.replace("Zeres ", "").toUpperCase());
-    const st = instances[id]?.state;
-    T("sub-" + id, st === "update" ? "§6Actualización" : st === "install" ? "§eSin instalar" : anyRunning(id) ? "§aEn juego" : "§bListo");
+    const [l1, l2] = instLines(id);
+    T("lbl-" + id, INST[id].name);
+    T("inf1-" + id, MC.fit(l1, 250));
+    T("inf2-" + id, MC.fit(l2, 250));
   }
   renderServer();
   const acc = activeAccount();
-  T("sideName", acc ? "§l" + acc.name : "§7Sin cuenta");
-  T("sideKind", !acc ? "§ePulsa para añadir" : acc.kind === "microsoft" ? "§aPremium" : "§bSin premium");
+  T("sideName", acc ? acc.name : "§7Sin cuenta · pulsa para añadir");
   await drawHead($("sideHead"), acc);
-  await drawHead($("headIco"), acc);
-}
-/** Las ultimas novedades en la tarjeta del inicio (hasta 3 lineas). */
-function renderNewsList() {
-  const box = $("newsList");
-  box.innerHTML = "";
-  const list = Array.isArray(news) ? news.slice(0, 3) : [];
-  if (!list.length) { const s = document.createElement("span"); s.className = "t"; box.appendChild(s); T(s, "§7Sin novedades por ahora"); return; }
-  for (const n of list) {
-    const s = document.createElement("span"); s.className = "t"; box.appendChild(s);
-    T(s, MC.fit("§e" + (n.tag || "•") + " §f" + (n.title || ""), 190));
-  }
 }
 function renderServer() {
   const fav = $("favicon").getContext("2d");
@@ -220,7 +220,7 @@ function renderServer() {
   if (!server) { T("srvName", "Zeres Network"); T("srvMotd1", "§8Conectando..."); T("srvMotd2", ""); T("srvPlayers", ""); startPinging(); return; }
   if (!server.online) {
     tex("gui/unknown_server.png").then(i => fav.drawImage(i, 0, 0, 64, 64));
-    T("srvName", "Zeres Network"); T("srvMotd1", "§4No se puede conectar con el servidor"); T("srvMotd2", "§8" + MC.fit(server.error ? server.host + " · " + server.error : server.host, 225)); T("srvPlayers", "");
+    T("srvName", "Zeres Network"); T("srvMotd1", "§4No se puede conectar con el servidor"); T("srvMotd2", "§8" + MC.fit(server.error ? server.host + " · " + server.error : server.host, 240)); T("srvPlayers", "");
     $("pingbar").style.backgroundImage = `url("${TH}gui/server_list/unreachable.png")`;
     return;
   }
@@ -387,8 +387,6 @@ function notesToItems(md) {
 /* ================================================================== navegacion */
 function go(v) {
   document.querySelectorAll(".view").forEach(x => x.classList.toggle("on", x.id === "v-" + v));
-  $("bSettings").classList.toggle("on", v === "settings");
-  $("bProfile").classList.toggle("on", v === "profile" || v === "add" || v === "ms");
   $("pano").classList.toggle("blur", v !== "home");
   if (v === "home") renderHome();
   if (v === "settings") renderSettings();
@@ -684,7 +682,7 @@ async function boot() {
   await MC.load(TH);
   $("boot").classList.remove("on");
   renderStatic();
-  T("barTitle", "Zeres Launcher"); T("barBeta", "§eBETA " + appVersion); T("wMinT", "_"); T("wCloseT", "x");
+  T("barBeta", "Zeres Launcher " + appVersion); T("wMinT", "_"); T("wCloseT", "x");
   await drawIcons();
   await setPano();
   requestAnimationFrame(spin);
@@ -709,13 +707,16 @@ async function boot() {
   $("wClose").onclick = () => appWindow.close();
   document.querySelectorAll(".inst").forEach(el => {
     el.onclick = () => selectInstance(el.dataset.inst);
+    el.ondblclick = () => { if (el.dataset.inst === current && !$("play").disabled) play(false, true); };
   });
   $("play").onclick = () => play(false, true);
-  $("srvRefresh").onclick = () => { if (!pinging) refreshServer(true); };
+  $("server").onclick = () => { if (!pinging) refreshServer(true); };
+  $("bMods").onclick = () => { tab = 2; go("settings"); };
+  $("bFolder").onclick = () => invoke("open_folder", { id: current });
   $("acct").onclick = () => go("profile");
   $("splash").onclick = () => { splashI = (splashI + 1) % SPLASHES.length; T("splash", SPLASHES[splashI], { c: "e" }); };
-  $("bSettings").onclick = () => go($("v-settings").classList.contains("on") ? "home" : "settings");
-  $("bProfile").onclick = () => go($("v-profile").classList.contains("on") ? "home" : "profile");
+  $("bSettings").onclick = () => { tab = 0; go("settings"); };
+  $("bProfile").onclick = () => go("profile");
   document.querySelectorAll("[data-home]").forEach(b => b.onclick = () => go("home"));
   document.querySelectorAll("[data-goto]").forEach(b => b.onclick = () => go(b.dataset.goto));
   $("pOff").onclick = () => go("add");

@@ -1,223 +1,156 @@
-/* Zeres Launcher: estilo Pokepad (marco rojo tipo Pokedex, pantallas azules, tarjetas y botones del Pokepad).
+/* Zeres Launcher (canal dev): estilo menu clasico de Minecraft, como "Elegir mundo": panoramica difuminada, lista
+   oscura entre separadores y botones con las texturas del propio juego (--variables, ver setThemeVars en app.js).
    Todo el texto es la letra pixelada de Minecraft (mcfont.js). */
-:root {
-  --out: #0b2f5e; --navy: #0e3b73; --navy2: #0a2c57;
-  --card1: #2563a8; --card2: #16437f; --sel: #f5be45;
-  --scr1: #4fa8f0; --scr2: #1e6fc0;
-  --red1: #eb4646; --red2: #d23434; --red-d: #6e1414; --red-dd: #4a1010; --red-m: #8e1f1f;
-}
 * { box-sizing: border-box; margin: 0; padding: 0; }
-html, body { width: 1000px; height: 620px; overflow: hidden; background: var(--red-dd); }
+html, body { width: 1000px; height: 620px; overflow: hidden; background: #000; }
 body { font-family: "Segoe UI", system-ui, sans-serif; color: #fff; user-select: none; -webkit-user-select: none; cursor: default; }
 canvas, img { image-rendering: pixelated; }
 button { font: inherit; color: inherit; background: none; border: 0; cursor: pointer; }
 .hidden { display: none !important; }
 
-/* ---------------------------------------------------------------- cuerpo rojo del aparato */
-.win { width: 1000px; height: 620px; display: grid; grid-template-rows: 76px 1fr;
-       background: linear-gradient(var(--red1), var(--red2)); box-shadow: inset 0 0 0 3px var(--red-dd), inset 0 0 0 6px #a82424; }
+.win { position: relative; width: 1000px; height: 620px; overflow: hidden; background: #000; }
 
-/* ---------------------------------------------------------------- cabecera: lente, lucecitas, logo y ventana */
-.bar { position: relative; display: flex; align-items: center; gap: 8px; padding: 0 16px 0 18px; }
-.bar::after { content: ""; position: absolute; left: 24px; right: 24px; top: 12px; height: 2px; background: #ffffff40; pointer-events: none; }
-.lens { width: 54px; height: 54px; border-radius: 50%; flex: none; margin-top: 4px;
-        background: radial-gradient(circle at 36% 32%, #ffffffd0 0 14%, transparent 15%), radial-gradient(circle at 50% 50%, #9fe0ff 0, #2a7fd0 62%, transparent 63%), #f2f2f2;
-        box-shadow: 0 0 0 4px var(--red-d), inset 0 0 0 4px #f2f2f2, inset 0 0 0 6px #1b4a80; }
-.led { width: 15px; height: 15px; border-radius: 50%; flex: none; margin-top: -18px; box-shadow: 0 0 0 2px var(--red-d), inset -2px -2px 0 #0003; }
-.led.r { background: #e84040; margin-left: 6px; } .led.y { background: #f5d040; } .led.g { background: #50c878; }
-.bar .sp { flex: 1; align-self: stretch; }
-.title-tab { height: 50px; padding: 0 22px; display: flex; align-items: center; border-radius: 12px;
-             background: linear-gradient(var(--red-m), #5a1414); box-shadow: 0 0 0 4px var(--red-d), inset 0 2px 0 #ffffff22; }
-.bar-logo { height: 34px; }
-.beta { margin-left: 4px; }
-.wb { width: 38px; height: 30px; display: grid; place-items: center; border-radius: 7px; margin-left: 6px;
-      background: linear-gradient(#4c9bea, #1f62b0); box-shadow: 0 0 0 3px var(--red-d), inset 0 2px 0 #ffffff40, inset 0 -3px 0 #0003; }
-.wb:hover { filter: brightness(1.12); }
-.wb.x { background: linear-gradient(#e8605a, #a82828); }
-
-/* ---------------------------------------------------------------- pantallas y bisagra */
-.body { position: relative; overflow: hidden; }
-.scr { position: absolute; border-radius: 10px; overflow: hidden;
-       background: radial-gradient(#ffffff16 1px, transparent 1.4px) 0 0 / 6px 6px, linear-gradient(var(--scr1), var(--scr2));
-       box-shadow: 0 0 0 3px #e8f4ff, 0 0 0 6px var(--red-d), inset 0 0 18px #0003; }
-.scr-left { left: 24px; top: 10px; width: 230px; height: 504px; }
-.scr-main { left: 298px; top: 10px; width: 678px; height: 504px; }
-.hinge { position: absolute; left: 263px; top: 8px; width: 22px; height: 508px; border-radius: 6px; background: var(--red-m);
-         display: flex; flex-direction: column; justify-content: space-around; align-items: center; box-shadow: inset 0 0 0 2px var(--red-d); }
-.hinge i { width: 14px; height: 74px; border-radius: 4px; background: #c93030; box-shadow: inset 0 2px 0 #ffffff30; }
-
-/* panoramica 3D de Minecraft dentro de la parte de arriba de la pantalla principal, tintada de azul */
-.pano { position: absolute; left: 0; top: 0; right: 0; height: 232px; perspective: 500px; overflow: hidden; transition: filter .25s; }
-.pano.blur { filter: blur(5px) brightness(.8); }
+/* ---------------------------------------------------------------- fondo: panoramica 3D difuminada */
+.pano { position: absolute; inset: -12px; perspective: 500px; overflow: hidden; filter: blur(4px) brightness(.78); transition: filter .25s; }
+.pano.blur { filter: blur(7px) brightness(.6); }
 .cube { position: absolute; left: 50%; top: 50%; transform-style: preserve-3d; }
 .face { position: absolute; width: 1004px; height: 1004px; left: -502px; top: -502px; background-size: cover; backface-visibility: hidden; image-rendering: auto; }
-.pano-tint { position: absolute; left: 0; top: 0; right: 0; height: 236px; pointer-events: none;
-             background: linear-gradient(#184a8c30 0%, #1e6fc040 55%, #2f86d8 98%); }
+.shade { position: absolute; inset: 0; pointer-events: none; background: radial-gradient(ellipse at 50% 45%, transparent 55%, #0006 100%); }
 
 /* ---------------------------------------------------------------- texto de Minecraft */
 .t { display: inline-block; line-height: 0; }
 .t canvas { display: block; }
 
-/* ---------------------------------------------------------------- piezas del Pokepad */
-.card { position: absolute; border-radius: 8px; background: linear-gradient(var(--card1), var(--card2));
-        box-shadow: 0 0 0 2px var(--out), inset 0 2px 0 #ffffff26, inset 0 -3px 0 #0003; }
-.card-title { margin-bottom: 4px; }
+/* ---------------------------------------------------------------- cabecera */
+.bar { position: absolute; left: 0; top: 0; width: 1000px; height: 84px; z-index: 5; }
+.logo-box { position: absolute; left: 50%; top: 13px; transform: translateX(-50%); }
+.logo { width: 376px; height: 50px; display: block; filter: drop-shadow(0 3px 0 #0009); }
+.splash { position: absolute; left: 356px; top: 46px; transform: translate(-50%, -50%) rotate(-16deg); animation: splash .45s ease-in-out infinite alternate;
+          cursor: pointer; white-space: nowrap; }
+@keyframes splash { from { transform: translate(-50%, -50%) rotate(-16deg) scale(1); } to { transform: translate(-50%, -50%) rotate(-16deg) scale(1.08); } }
+.bar .wb { position: absolute; top: 10px; width: 36px; height: 36px; }
+#wMin { right: 52px; } #wClose { right: 10px; }
 
-/* botones (antes texturas de Minecraft): azul del Pokepad */
-.mcbtn { position: relative; height: 40px; display: inline-flex; align-items: center; justify-content: center; border-radius: 7px;
-         background: linear-gradient(#4c9bea, #1f62b0); box-shadow: 0 0 0 2px var(--out), inset 0 0 0 2px #8cc8ff70, inset 0 -4px 0 #0003; }
-.mcbtn:hover { filter: brightness(1.12); box-shadow: 0 0 0 2px var(--out), inset 0 0 0 2px #ffffff, inset 0 -4px 0 #0003; }
-.mcbtn:active { transform: translateY(1px); }
-.mcbtn.green { background: linear-gradient(#5bd47a, #2a8a44); box-shadow: 0 0 0 2px var(--out), inset 0 0 0 2px #9cf0b070, inset 0 -4px 0 #0003; }
-.mcbtn.off, .mcbtn:disabled { background: linear-gradient(#5a6e8c, #3a4a64); cursor: default; filter: none; transform: none; }
-.mcbtn.sq { width: 48px; height: 48px; }
-.mcbtn.w400 { width: 400px; } .mcbtn.w196 { width: 180px; } .mcbtn.w300 { width: 300px; }
-.slider { position: relative; height: 40px; border-radius: 7px; cursor: pointer; background: var(--navy2); box-shadow: 0 0 0 2px var(--out), inset 0 2px 6px #0006; }
-.slider .handle { position: absolute; top: 2px; width: 16px; height: 36px; border-radius: 5px; background: linear-gradient(#f5be45, #c98612); box-shadow: 0 0 0 2px var(--out); }
+/* ---------------------------------------------------------------- widgets de Minecraft (nine-slice con las texturas del juego) */
+.mcbtn { position: relative; height: 40px; display: inline-flex; align-items: center; justify-content: center; overflow: hidden;
+         border-image: var(--btn) 3 fill / 6px stretch; image-rendering: pixelated; }
+.mcbtn:hover, .mcbtn.on { border-image-source: var(--btn-hi); }
+.mcbtn.off, .mcbtn:disabled { border-image-source: var(--btn-off); cursor: default; }
+.mcbtn.w400 { width: 400px; } .mcbtn.w196 { width: 196px; } .mcbtn.w300 { width: 300px; }
+.slider { position: relative; height: 40px; border-image: var(--slider) 3 fill / 6px stretch; image-rendering: pixelated; cursor: pointer; }
+.slider:hover { border-image-source: var(--slider-hi); }
+.slider .handle { position: absolute; top: 0; width: 16px; height: 40px; border-image: var(--handle) 3 fill / 6px stretch; image-rendering: pixelated; }
+.slider:hover .handle { border-image-source: var(--handle-hi); }
 .slider .lbl { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; pointer-events: none; }
-.tabs { position: absolute; left: 0; right: 0; bottom: 8px; display: flex; justify-content: center; gap: 8px; }
-.tab { height: 40px; width: 190px; display: flex; align-items: center; justify-content: center; cursor: pointer; border-radius: 8px;
-       background: linear-gradient(var(--card1), var(--card2)); box-shadow: 0 0 0 2px var(--out), inset 0 2px 0 #ffffff26; }
-.tab:hover { filter: brightness(1.12); }
-.tab.on { box-shadow: 0 0 0 2px var(--out), inset 0 0 0 2px var(--sel); background: linear-gradient(#2c66ae, var(--card2)); }
-.chk { display: flex; align-items: center; gap: 10px; cursor: pointer; height: 40px; padding: 0 8px; border-radius: 7px;
-       background: linear-gradient(var(--card1), var(--card2)); box-shadow: 0 0 0 2px var(--out); }
-.chk i { width: 24px; height: 24px; border-radius: 5px; flex: none; background: var(--navy2); box-shadow: 0 0 0 2px var(--out), inset 0 2px 4px #0006; position: relative; }
-.chk.on i { background: #5bd47a; }
-.chk.on i::after { content: ""; position: absolute; left: 8px; top: 3px; width: 6px; height: 12px; border: solid #fff; border-width: 0 4px 4px 0; transform: rotate(45deg); }
-.field { position: relative; display: flex; align-items: center; height: 40px; width: 400px; padding: 0 10px; cursor: text; border-radius: 7px;
-         background: var(--navy2); box-shadow: 0 0 0 2px var(--out), inset 0 2px 6px #0006; }
-.field.focus { box-shadow: 0 0 0 2px var(--sel), inset 0 2px 6px #0006; }
+.tabs { position: absolute; left: 0; right: 0; bottom: 0; display: flex; justify-content: center; }
+.tab { height: 48px; width: 220px; display: flex; align-items: center; justify-content: center; cursor: pointer;
+       border-image: var(--tab) 2 2 0 2 fill / 4px 4px 0 4px stretch; image-rendering: pixelated; }
+.tab:hover { border-image-source: var(--tab-hi); background: #ffffff14; }
+.tab.on { border-image-source: var(--tab-sel); box-shadow: inset 0 -3px 0 #fff; }
+.tab.on:hover { border-image-source: var(--tab-sel-hi); }
+.chk { display: flex; align-items: center; gap: 8px; cursor: pointer; height: 40px; }
+.chk i { width: 40px; height: 40px; background: var(--chk) 0 0 / 40px 40px; image-rendering: pixelated; flex: none; }
+.chk:hover i { background-image: var(--chk-hi); }
+.chk.on i { background-image: var(--chk-on); }
+.chk.on:hover i { background-image: var(--chk-on-hi); }
+.field { position: relative; display: flex; align-items: center; height: 40px; width: 400px; padding: 0 8px; cursor: text;
+         background: #000; box-shadow: inset 0 0 0 2px #a0a0a0; }
+.field.focus { box-shadow: inset 0 0 0 2px #fff; }
 .field input { position: absolute; inset: 0; opacity: 0; cursor: text; }
 
-/* ---------------------------------------------------------------- pantalla izquierda: cuenta y modalidades */
-.side { position: absolute; left: 24px; top: 10px; width: 230px; height: 504px; z-index: 3; display: flex; flex-direction: column; align-items: center;
-        gap: 10px; padding: 14px 16px; }
-.side-title { margin-top: 2px; }
-.acct { display: flex; flex-direction: column; align-items: center; gap: 7px; cursor: pointer; padding: 6px; border-radius: 8px; width: 100%; }
-.acct:hover { background: #ffffff14; }
-.acct-head { width: 84px; height: 84px; border-radius: 8px; padding: 5px; background: linear-gradient(#ffd84a, #f0a830); box-shadow: 0 0 0 2px var(--out), inset 0 2px 0 #ffffff60; }
-.acct-head canvas { width: 74px; height: 74px; display: block; border-radius: 3px; box-shadow: 0 0 0 2px #00000040; }
-.inst { width: 100%; height: 132px; position: relative; cursor: pointer; border-radius: 10px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px;
-        background: linear-gradient(var(--card1), var(--card2)); box-shadow: 0 0 0 2px var(--out), inset 0 0 0 2px #3c8fdc, inset 0 -4px 0 #0003; transition: transform .08s; }
-.inst .ico { width: 64px; height: 64px; display: block; }
-.inst:hover { filter: brightness(1.1); }
-.inst:active { transform: translateY(1px); }
-.inst.on { box-shadow: 0 0 0 2px var(--out), inset 0 0 0 3px var(--sel), inset 0 -4px 0 #0003; background: linear-gradient(#4fa3ea, #2c7cd0); }
-.tip { position: absolute; z-index: 9; display: none; padding: 7px 9px 5px; pointer-events: none; border-radius: 6px; background: #0b1f3ef0; box-shadow: 0 0 0 2px var(--sel); }
-
-/* ---------------------------------------------------------------- vistas (dentro de la pantalla principal) */
-.view { position: absolute; left: 298px; top: 10px; width: 678px; height: 504px; display: none; z-index: 2; border-radius: 10px; overflow: hidden; }
+/* ---------------------------------------------------------------- vistas */
+.view { position: absolute; left: 0; top: 84px; width: 1000px; height: 536px; display: none; z-index: 2; }
 .view.on { display: block; }
+/* fondo de lista de Minecraft entre los separadores de arriba y abajo */
+.list, .m-list, .prof { background: linear-gradient(#0000005c, #0000005c), var(--list-bg) 0 0 / 32px 32px; image-rendering: pixelated; }
 
 /* inicio */
-.logo-box { position: absolute; left: 50%; top: 26px; transform: translateX(-50%); width: 420px; text-align: center; }
-.logo { width: 400px; height: 53px; display: block; margin: 0 auto; filter: drop-shadow(0 4px 0 #0008); }
-.ribbon { display: inline-flex; align-items: center; justify-content: center; margin-top: 12px; padding: 8px 16px 6px; border-radius: 8px;
-          background: var(--red-m); box-shadow: 0 0 0 3px var(--red-d), inset 0 2px 0 #ffffff26; }
-.ribbon-img { display: block; height: 48px; margin: 12px auto 0; image-rendering: pixelated; filter: drop-shadow(0 4px 0 #0008); }
-.ribbon[hidden], .ribbon-img[hidden] { display: none; }
-.splash { position: absolute; left: 404px; top: 46px; transform: translate(-50%, -50%) rotate(-14deg); animation: splash .45s ease-in-out infinite alternate; cursor: pointer; white-space: nowrap; }
-@keyframes splash { from { transform: translate(-50%, -50%) rotate(-14deg) scale(1); } to { transform: translate(-50%, -50%) rotate(-14deg) scale(1.08); } }
-
-.server { left: 20px; top: 236px; width: 638px; height: 76px; padding: 6px; display: flex; gap: 10px; }
-.fav { width: 64px; height: 64px; flex: none; border-radius: 6px; background: var(--navy2); box-shadow: 0 0 0 2px var(--out); }
-.server canvas { width: 64px; height: 64px; display: block; }
-.srv-txt { display: flex; flex-direction: column; gap: 4px; padding-top: 3px; }
-.srv-right { position: absolute; right: 12px; top: 10px; display: flex; gap: 8px; align-items: flex-start; }
+.list { position: absolute; left: 0; top: 0; width: 1000px; height: 372px; display: flex; flex-direction: column; align-items: center; padding-top: 12px;
+        border-top: 4px solid transparent; border-bottom: 4px solid transparent;
+        border-image: none; box-shadow: none; }
+.list::before, .list::after { content: ""; position: absolute; left: 0; right: 0; height: 4px; }
+.list::before { top: -4px; background: var(--head-sep) 0 0 / 64px 4px repeat-x; }
+.list::after { bottom: -4px; background: var(--foot-sep) 0 0 / 64px 4px repeat-x; }
+.list-title { margin-bottom: 10px; }
+.list-sub { align-self: flex-start; margin: 6px 0 4px 210px; }
+.inst, .server { position: relative; width: 588px; height: 76px; padding: 4px 6px; display: flex; gap: 10px; cursor: pointer; border: 2px solid transparent; }
+.inst + .inst { margin-top: 4px; }
+.inst:hover, .server:hover { border-color: #808080; }
+.inst.on { border-color: #fff; background: #000; }
+.inst .ico, .server canvas { width: 64px; height: 64px; flex: none; display: block; }
+.inst .txt, .server .txt { display: flex; flex-direction: column; gap: 6px; padding-top: 3px; }
+.srv-right { position: absolute; right: 8px; top: 7px; display: flex; gap: 8px; align-items: flex-start; }
 .pingbar { width: 20px; height: 16px; background-size: 20px 16px; image-rendering: pixelated; }
-.srv-refresh { position: absolute; right: 10px; bottom: 8px; height: 24px; padding: 0 12px; border-radius: 5px; }
 
-.news-card-home { left: 20px; top: 324px; width: 376px; height: 92px; padding: 7px 12px; display: flex; flex-direction: column; gap: 5px; }
-.news-lines { display: flex; flex-direction: column; gap: 6px; }
-.game-card { left: 408px; top: 324px; width: 250px; height: 92px; padding: 7px 12px; display: flex; flex-direction: column; gap: 4px; }
-
-.dock { position: absolute; left: 20px; top: 444px; width: 434px; height: 44px; }
-/* el estado va encima del boton, en la franja entre las tarjetas y el boton */
-.status { position: absolute; left: 4px; bottom: 48px; min-height: 16px; }
-/* boton grande del Pokepad: verde JUGAR, amarillo ACTUALIZAR; la barra de progreso va dentro */
-.play { position: relative; width: 100%; height: 44px; display: flex; align-items: center; justify-content: center; gap: 12px; cursor: pointer;
-        overflow: hidden; border-radius: 9px; background: linear-gradient(#5bd47a, #2a8a44);
-        box-shadow: 0 0 0 2px var(--out), inset 0 0 0 3px #9cf0b0, inset 0 -5px 0 #0003; transition: transform .05s; }
-.play:hover { filter: brightness(1.08); box-shadow: 0 0 0 2px var(--out), inset 0 0 0 3px #ffffff, inset 0 -5px 0 #0003; }
-.play:active { transform: translateY(2px); }
-.play.upd { background: linear-gradient(#f0b030, #c07a10); box-shadow: 0 0 0 2px var(--out), inset 0 0 0 3px #ffe066, inset 0 -5px 0 #0003; }
-.play:disabled { cursor: default; filter: none; transform: none; background: linear-gradient(#5a6e8c, #3a4a64); box-shadow: 0 0 0 2px var(--out), inset 0 0 0 3px #7f92ae, inset 0 -5px 0 #0003; }
-.play.busy:disabled { background: linear-gradient(#f0b030, #c07a10); box-shadow: 0 0 0 2px var(--out), inset 0 0 0 3px #ffe066, inset 0 -5px 0 #0003; }
-.play .fill { position: absolute; left: 0; top: 0; bottom: 0; width: 0; background: linear-gradient(#ffffff60, #ffffff30); transition: width .2s; display: none; }
+.status { position: absolute; left: 50%; top: 380px; transform: translateX(-50%); white-space: nowrap; }
+.btns { position: absolute; left: 196px; top: 402px; width: 608px; display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+.btns .mcbtn { width: 100%; }
+.btns .play, .btns #bProfile { grid-column: span 2; }
+/* boton principal: siempre resaltado; amarillo para jugar, naranja para instalar/actualizar; la barra de progreso va dentro */
+.play { border-image-source: var(--btn-hi); }
+.play .fill { position: absolute; left: 4px; top: 4px; bottom: 4px; width: 0; background: #3fbf3f80; transition: width .2s; display: none; }
 .play.busy .fill { display: block; }
-.play .play-ico, .play .t { position: relative; }
-.play .play-ico { width: 27px; height: 27px; }
+.play .t { position: relative; }
+.acct { position: absolute; left: 10px; bottom: 10px; display: flex; align-items: center; gap: 8px; cursor: pointer; padding: 2px 4px 2px 2px; }
+.acct canvas { width: 24px; height: 24px; box-shadow: 0 0 0 1px #000; }
+.acct:hover { background: #ffffff1c; }
+.ver { position: absolute; right: 10px; bottom: 15px; }
 
-/* botones de navegacion del Pokepad (novedades, ajustes, perfil) */
-.navs { position: absolute; right: 20px; top: 444px; display: flex; gap: 12px; }
-.nbtn { width: 56px; height: 44px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; border-radius: 9px;
-        background: linear-gradient(var(--card1), var(--card2)); box-shadow: 0 0 0 2px var(--out), inset 0 0 0 2px #3c8fdc, inset 0 -4px 0 #0003; }
-.nbtn canvas { width: 28px; height: 28px; }
-.nbtn:hover, .nbtn.on { box-shadow: 0 0 0 2px var(--out), inset 0 0 0 2px var(--sel), inset 0 -4px 0 #0003; filter: brightness(1.1); }
-
-/* menus (ajustes, cuentas...) dentro de la pantalla */
-.menu { display: none; grid-template-rows: 62px 1fr 64px; background: #1e6fc0cc; }
+/* menus (ajustes, cuentas...) como los del juego */
+.menu { display: none; grid-template-rows: 56px 1fr 72px; }
 .menu.on { display: grid; }
-.m-head { position: relative; display: flex; align-items: center; justify-content: center; background: linear-gradient(var(--navy), var(--navy2)); box-shadow: inset 0 -2px 0 var(--out); }
+.m-head { position: relative; display: flex; align-items: center; justify-content: center; background: var(--head-sep) bottom left / 64px 4px repeat-x; }
 .m-list { position: relative; overflow: hidden; }
-.m-foot { display: flex; align-items: center; justify-content: center; gap: 10px; flex-wrap: wrap; background: linear-gradient(var(--navy2), var(--navy)); box-shadow: inset 0 2px 0 var(--out); }
+.m-foot { display: flex; align-items: center; justify-content: center; gap: 8px; flex-wrap: wrap; background: var(--foot-sep) top left / 64px 4px repeat-x; }
 .opt-grid { position: absolute; left: 50%; top: 16px; transform: translateX(-50%); width: 620px; display: grid; grid-template-columns: 306px 306px; gap: 8px; }
 .opt-grid .wide { grid-column: span 2; }
 .opt-grid .mcbtn { width: 100%; }
 .opt-grid .note { grid-column: span 2; display: flex; justify-content: center; padding-top: 6px; }
+
 /* perfil: skin en 3D a la izquierda, cuentas a la derecha */
-.prof { background: #1e6fc0d8; }
-.prof.on { display: grid; grid-template-columns: 1fr 300px; }
+.prof.on { display: grid; grid-template-columns: 1fr 380px; box-shadow: inset 0 4px 0 #0000, inset 0 -4px 0 #0000; }
 .prof-stage { position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 18px; cursor: grab;
-              background: radial-gradient(ellipse at 50% 62%, #ffffff22, transparent 60%); }
+              background: radial-gradient(ellipse at 50% 62%, #ffffff14, transparent 60%); }
 .prof-stage:active { cursor: grabbing; }
 .viewer { width: 240px; height: 340px; perspective: 900px; display: grid; place-items: center; }
 .player { position: relative; width: 0; height: 0; transform-style: preserve-3d; }
 .part { position: absolute; transform-style: preserve-3d; }
 .part > i { position: absolute; background-repeat: no-repeat; image-rendering: pixelated; backface-visibility: hidden; }
-.prof-stage::after { content: ""; position: absolute; bottom: 86px; width: 140px; height: 16px; border-radius: 50%; background: #0007; filter: blur(4px); z-index: -1; }
+.prof-stage::after { content: ""; position: absolute; bottom: 86px; width: 140px; height: 16px; border-radius: 50%; background: #0009; filter: blur(4px); z-index: -1; }
 .prof-name { display: flex; flex-direction: column; align-items: center; gap: 8px; }
 .prof-hint { position: absolute; bottom: 12px; }
-.prof-side { display: flex; flex-direction: column; gap: 10px; padding: 18px 16px; background: linear-gradient(var(--navy), var(--navy2)); box-shadow: inset 2px 0 0 var(--out); }
-.prof-title { margin-bottom: 4px; }
-.acc-list { flex: 1; display: flex; flex-direction: column; gap: 8px; overflow: auto; }
-.acc { position: relative; height: 60px; padding: 6px 10px 6px 6px; display: flex; align-items: center; gap: 10px; cursor: pointer; border-radius: 8px;
-       background: linear-gradient(var(--card1), var(--card2)); box-shadow: 0 0 0 2px var(--out), inset 0 2px 0 #ffffff20; }
-.acc:hover { filter: brightness(1.1); }
-.acc.on { box-shadow: 0 0 0 2px var(--out), inset 0 0 0 2px var(--sel); }
-.acc > canvas { width: 46px; height: 46px; flex: none; border-radius: 4px; box-shadow: 0 0 0 2px var(--out); }
+.prof-side { display: flex; flex-direction: column; gap: 8px; padding: 18px 20px; background: #0000005c; box-shadow: inset 2px 0 0 #000, inset 4px 0 0 #ffffff14; }
+.prof-title { align-self: center; margin-bottom: 6px; }
+.acc-list { flex: 1; display: flex; flex-direction: column; gap: 4px; overflow: auto; }
+.acc { position: relative; height: 60px; padding: 4px 8px 4px 4px; display: flex; align-items: center; gap: 10px; cursor: pointer; border: 2px solid transparent; }
+.acc:hover { border-color: #808080; }
+.acc.on { border-color: #fff; background: #000; }
+.acc > canvas { width: 48px; height: 48px; flex: none; }
 .acc .txt { flex: 1; display: flex; flex-direction: column; gap: 6px; }
-.acc .del { width: 26px; height: 26px; display: grid; place-items: center; border-radius: 6px; background: linear-gradient(#e8605a, #a82828); box-shadow: 0 0 0 2px var(--out); opacity: 0; transition: opacity .1s; }
+.acc .del { width: 26px; height: 26px; display: grid; place-items: center; border-image: var(--btn) 3 fill / 6px stretch; opacity: 0; transition: opacity .1s; }
+.acc .del:hover { border-image-source: var(--btn-hi); }
 .acc:hover .del { opacity: 1; }
 .prof-add { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-.bbtn { height: 42px; display: flex; align-items: center; justify-content: center; cursor: pointer; border-radius: 8px;
-        background: linear-gradient(#4c9bea, #1f62b0); box-shadow: 0 0 0 2px var(--out), inset 0 0 0 2px #8cc8ff70, inset 0 -4px 0 #0003; }
-.bbtn:hover { filter: brightness(1.12); }
-.bbtn:active { transform: translateY(1px); }
-.bbtn.green { background: linear-gradient(#5bd47a, #2a8a44); box-shadow: 0 0 0 2px var(--out), inset 0 0 0 2px #9cf0b070, inset 0 -4px 0 #0003; }
-.bbtn.ghost { background: linear-gradient(var(--card1), var(--card2)); }
-.bbtn:disabled { opacity: .45; cursor: default; }
+.prof-side .mcbtn { width: 100%; }
 .form { position: absolute; left: 50%; top: 36px; transform: translateX(-50%); width: 400px; display: flex; flex-direction: column; gap: 10px; }
-.form.center { align-items: center; text-align: center; width: 620px; top: 56px; gap: 18px; }
+.form.center { align-items: center; text-align: center; width: 640px; top: 56px; gap: 18px; }
 
 /* primer arranque */
-.boot { position: absolute; inset: 0; z-index: 20; display: none; flex-direction: column; align-items: center; justify-content: center; gap: 16px;
-        background: linear-gradient(var(--scr1), var(--scr2)); }
+.boot { position: absolute; inset: 0; z-index: 20; display: none; flex-direction: column; align-items: center; justify-content: center; gap: 16px; background: #0c0c0c; }
 .boot.on { display: flex; }
 .boot img { width: 486px; height: 64px; }
-.boot p { font-size: 15px; color: #fff; }
-.boot small { color: #cfe8ff; font-size: 12px; }
-.boot-bar { width: 400px; height: 14px; border-radius: 7px; background: var(--navy2); box-shadow: 0 0 0 2px var(--out); padding: 2px; }
-.boot-bar i { display: block; height: 100%; width: 0; border-radius: 5px; background: linear-gradient(#5bd47a, #2a8a44); }
+.boot p { font-size: 15px; color: #ddd; }
+.boot small { color: #777; font-size: 12px; }
+.boot-bar { width: 400px; height: 10px; border: 2px solid #fff; padding: 1px; }
+.boot-bar i { display: block; height: 100%; width: 0; background: #fff; }
 
-/* novedades (al actualizar el launcher o un modpack): tarjeta del Pokepad sobre la pantalla */
-.news-view { background: #0b1f3ec0; z-index: 6; }
+/* novedades (al actualizar el launcher o un modpack): ventana oscura sobre todo */
+.news-view { top: 0; height: 620px; background: #000000b0; z-index: 6; }
 .news-view.on { display: grid; place-items: center; }
-.news-card { width: 540px; max-height: 460px; display: flex; flex-direction: column; align-items: center; gap: 10px; padding: 22px 24px 20px; border-radius: 12px;
-             background: linear-gradient(var(--card1), var(--card2)); box-shadow: 0 0 0 3px var(--out), inset 0 0 0 2px var(--sel), 0 10px 40px #000a;
+.news-card { width: 560px; max-height: 470px; display: flex; flex-direction: column; align-items: center; gap: 10px; padding: 22px 24px 20px;
+             background: linear-gradient(#000000a0, #000000a0), var(--list-bg) 0 0 / 32px 32px; box-shadow: 0 0 0 2px #fff, 0 10px 40px #000a;
              animation: pop .22s ease-out; }
 @keyframes pop { from { transform: scale(.94); opacity: 0; } to { transform: none; opacity: 1; } }
-.nw-list { align-self: stretch; display: flex; flex-direction: column; gap: 7px; margin: 10px 0 6px; padding: 14px 16px; overflow: auto; border-radius: 8px;
-           background: var(--navy2); box-shadow: 0 0 0 2px var(--out), inset 0 2px 6px #0006; min-height: 60px; overflow-x: hidden; }
-.nw-ok { width: 260px; height: 46px; }
+.nw-list { align-self: stretch; display: flex; flex-direction: column; gap: 7px; margin: 10px 0 6px; padding: 14px 16px; overflow: auto; overflow-x: hidden;
+           background: #000; box-shadow: inset 0 0 0 2px #a0a0a0; min-height: 60px; }
+.nw-ok { width: 300px; }
