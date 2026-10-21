@@ -2,6 +2,7 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 mod auth;
+mod discord;
 mod launch;
 mod modpack;
 mod mojang;
@@ -51,6 +52,90 @@ async fn load_manifest(app: &App, force: bool) -> Result<Value, String> {
     let m = modpack::manifest(&url).await.map_err(err)?;
     *app.manifest.lock().unwrap() = Some(m.clone());
     Ok(m)
+}
+
+// ================================================================== canal dev (solo staff)
+
+const BETA_UPDATES: &str = "https://github.com/Zeres-Network/zeres-launcher/releases/latest/download/latest.json";
+const DEV_UPDATES: &str = "https://github.com/Zeres-Network/zeres-launcher/releases/download/canal-dev/latest.json";
+
+/// Nombre del staff si la cuenta activa y su codigo estan en la lista "staff" del manifest:
+/// [{"name": "Dayscraft", "uuid": "(opcional, solo cuentas premium)", "code_sha256": "..."}]. Cada uno tiene su codigo:
+/// para quitarle el acceso a uno basta con borrar su linea del manifest.
+fn staff_name(m: Option<&Value>, s: &Settings) -> Option<String> {
+    use sha2::{Digest, Sha256};
+    let code = s.staff_code.trim();
+    if code.is_empty() {
+        return None;
+    }
+    let acc = s.active_account()?;
+    let hash = hex::encode(Sha256::digest(code.as_bytes()));
+    for e in m?["staff"].as_array()? {
+        let name_ok = e["name"].as_str().is_some_and(|n| n.eq_ignore_ascii_case(&acc.name));
+        let uuid_ok = match e["uuid"].as_str() {
+            Some(u) if !u.is_empty() => acc.kind == "microsoft" && u.replace('-', "").eq_ignore_ascii_case(&acc.uuid.replace('-', "")),
+            _ => true,
+        };
+        let code_ok = e["code_sha256"].as_str().is_some_and(|h| h.eq_ignore_ascii_case(&hash));
+        if name_ok && uuid_ok && code_ok {
+            return Some(acc.name.clone());
+        }
+    }
+    None
+}
+
+/// Estado del staff y del canal; si ya no es staff (codigo quitado, otra cuenta), vuelve a beta.
+async fn staff_check(app: &App) -> Value {
+    let m = load_manifest(app, false).await.ok();
+    let mut s = app.settings.lock().unwrap();
+    let staff = staff_name(m.as_ref(), &s);
+    if staff.is_none() && s.channel == 2 {
+        s.channel = 0;
+        s.save();
+    }
+    json!({"staff": staff.is_some(), "name": staff, "channel": if s.channel == 2 { "dev" } else { "beta" }, "hasCode": !s.staff_code.is_empty()})
+}
+
+#[tauri::command]
+async fn staff_status(app: St<'_>) -> Result<Value, String> {
+    Ok(staff_check(&app).await)
+}
+
+#[tauri::command]
+async fn set_staff_code(app: St<'_>, code: String) -> Result<Value, String> {
+    {
+        let mut s = app.settings.lock().unwrap();
+        s.staff_code = code.trim().to_string();
+        s.save();
+    }
+    Ok(staff_check(&app).await)
+}
+
+#[tauri::command]
+async fn set_channel(app: St<'_>, dev: bool) -> Result<Value, String> {
+    let st = staff_check(&app).await;
+    if dev && !st["staff"].as_bool().unwrap_or(false) {
+        return Err("El canal dev es solo para el staff".into());
+    }
+    {
+        let mut s = app.settings.lock().unwrap();
+        s.channel = if dev { 2 } else { 0 };
+        s.save();
+    }
+    Ok(staff_check(&app).await)
+}
+
+/// Actualizador del canal elegido. Instala cualquier version distinta de la actual (asi se puede volver de dev a beta).
+fn updater_for(handle: &AppHandle) -> Result<tauri_plugin_updater::Updater, String> {
+    let dev = handle.state::<Arc<App>>().settings.lock().unwrap().channel == 2;
+    let url = url::Url::parse(if dev { DEV_UPDATES } else { BETA_UPDATES }).map_err(err)?;
+    handle
+        .updater_builder()
+        .endpoints(vec![url])
+        .map_err(err)?
+        .version_comparator(|current, release| release.version != current)
+        .build()
+        .map_err(err)
 }
 
 fn server_of(m: Option<&Value>) -> (String, u16) {
@@ -131,7 +216,7 @@ fn save_settings(app: St, patch: Value) -> Value {
     let mut cur = serde_json::to_value(&*s).unwrap_or_default();
     if let (Some(c), Some(p)) = (cur.as_object_mut(), patch.as_object()) {
         for (k, v) in p {
-            if k != "accounts" {
+            if k != "accounts" && k != "channel" && k != "staff_code" {
                 c.insert(k.clone(), v.clone());
             }
         }
@@ -279,10 +364,13 @@ async fn run_play(handle: &AppHandle, app: &Arc<App>, id: &str, repair: bool, la
     let idc = id.to_string();
     let close_mode = s.close_mode;
     let app2 = app.clone();
+    // presencia en Discord: de momento solo en el canal dev (2)
+    let presence_for = if s.channel == 2 { Some(id.to_string()) } else { None };
     // vigila el juego: cuando su ventana esta lista se oculta el launcher; al cerrarse suma el tiempo jugado
     std::thread::spawn(move || {
         let started = std::time::Instant::now();
         let mut ready = false;
+        let presence = presence_for.and_then(|i| discord::start(&i));
         let code = loop {
             if let Ok(Some(status)) = child.try_wait() {
                 break status.code().unwrap_or(-1);
@@ -306,6 +394,9 @@ async fn run_play(handle: &AppHandle, app: &Arc<App>, id: &str, repair: bool, la
             }
             std::thread::sleep(std::time::Duration::from_millis(500));
         };
+        if let Some(p) = presence {
+            p.stop();
+        }
         let played = started.elapsed().as_secs();
         let total = {
             let mut st = app2.settings.lock().unwrap();
@@ -367,7 +458,7 @@ async fn whats_new(app: St<'_>, all: Option<bool>) -> Result<Value, String> {
 /// ¿Hay una version nueva del launcher en GitHub? (latest.json del ultimo release, firmado)
 #[tauri::command]
 async fn check_update(handle: AppHandle) -> Result<Value, String> {
-    let updater = handle.updater().map_err(err)?;
+    let updater = updater_for(&handle)?;
     match updater.check().await {
         Ok(Some(u)) => Ok(json!({"available": true, "version": u.version, "notes": u.body})),
         Ok(None) => Ok(json!({"available": false})),
@@ -378,7 +469,7 @@ async fn check_update(handle: AppHandle) -> Result<Value, String> {
 /// Descarga la version nueva (comprobando la firma), la instala y reabre el launcher.
 #[tauri::command]
 async fn install_update(handle: AppHandle) -> Result<(), String> {
-    let update = handle.updater().map_err(err)?.check().await.map_err(err)?.ok_or("No hay ninguna versión nueva")?;
+    let update = updater_for(&handle)?.check().await.map_err(err)?.ok_or("No hay ninguna versión nueva")?;
     let h = handle.clone();
     let mut done: usize = 0;
     update
@@ -546,6 +637,9 @@ fn main() {
             server_status,
             instances,
             save_settings,
+            staff_status,
+            set_staff_code,
+            set_channel,
             add_offline,
             remove_account,
             set_active,

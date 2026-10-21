@@ -46,8 +46,10 @@ pub struct Settings {
     pub jvm_args: String,
     pub parallel: usize,
     pub animated: bool,
-    /// 0 = beta, 1 = estable
+    /// 0 = beta, 2 = dev (solo staff, ver `staff_code`)
     pub channel: u8,
+    /// codigo personal de staff (se comprueba contra la lista "staff" del manifest; cada uno tiene el suyo)
+    pub staff_code: String,
     pub manifest_url: String,
     /// mods opcionales desactivados por instancia (rutas dentro de la instancia)
     pub disabled_mods: HashMap<String, Vec<String>>,
@@ -76,6 +78,7 @@ impl Default for Settings {
             parallel: 8,
             animated: true,
             channel: 0,
+            staff_code: String::new(),
             manifest_url: DEFAULT_MANIFEST.to_string(),
             disabled_mods: HashMap::new(),
             last_instance: "zeres".to_string(),
@@ -141,6 +144,9 @@ impl Settings {
                     o.remove("refresh_token");
                 }
             }
+        }
+        if let Some(o) = v.as_object_mut() {
+            o.insert("staff_code".into(), serde_json::Value::Bool(!self.staff_code.is_empty())); // el codigo no sale
         }
         v
     }

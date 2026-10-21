@@ -417,14 +417,16 @@ function renderSettings() {
     h += note("En automático se usa el Java oficial de Mojang.");
   } else if (tab === 1) {
     h += btn("Al jugar: " + ["Ocultar launcher", "Cerrar launcher", "No hacer nada"][s.close_mode], "close");
-    h += btn("Canal: Beta", "channel", "off");
+    h += staff.staff ? btn("Canal: " + (staff.channel === "dev" ? "§dDev" : "Beta"), "channel") : btn("Canal: Beta", "channel", "off");
     h += btn("Descargas a la vez: " + s.parallel, "dl");
     h += btn("Panorámica animada: " + yes(s.animated), "anim");
     h += btn("Abrir carpeta del launcher", "folder");
     h += btn("Buscar actualizaciones", "refresh");
     h += note("Origen de los modpacks", "7");
     h += `<label class="field wide" id="manField" style="width:100%"><span class="t" id="manTxt"></span><input id="manInput" spellcheck="false"></label>`;
-    h += note("Zeres Launcher " + appVersion + " (BETA) · código abierto");
+    h += note(staff.staff ? "Código de staff §a(" + staff.name + ")" : "Código de staff", "7");
+    h += `<label class="field wide" id="staffField" style="width:100%"><span class="t" id="staffTxt"></span><input id="staffInput" type="password" spellcheck="false"></label>`;
+    h += note("Zeres Launcher " + appVersion + (staff.channel === "dev" ? " (DEV)" : " (BETA)") + " · código abierto");
   } else {
     const i = instances[current] || {}, opt = i.optional || [], off = (s.disabled_mods || {})[current] || [];
     h += note("§7" + name + " §8· " + instInfo(current));
@@ -479,6 +481,11 @@ function renderSettings() {
   }
   bindField("jvmField", "jvmInput", "jvmTxt", settings.jvm_args, 290, v => save({ jvm_args: v }));
   bindField("manField", "manInput", "manTxt", settings.manifest_url, 290, v => save({ manifest_url: v }));
+  bindField("staffField", "staffInput", "staffTxt", "", 290, async v => {
+    try { staff = await invoke("set_staff_code", { code: v }); } catch (e) { T("status", "§c" + MC.fit(String(e), 200)); return; }
+    T("status", staff.staff ? "§aCódigo de staff correcto · " + staff.name : v ? "§cEse código no vale para esta cuenta" : "§7Código de staff quitado");
+    renderSettings();
+  }, true);
 }
 async function settingAction(a) {
   const s = settings;
@@ -492,6 +499,14 @@ async function settingAction(a) {
   if (a === "folder") invoke("open_folder", { id: null });
   if (a === "ifolder") invoke("open_folder", { id: current });
   if (a === "refresh") { await refreshInstances(true); }
+  if (a === "channel" && staff.staff) {
+    // canal dev (solo staff): al cambiar, se instala al momento la version de ese canal
+    try { staff = await invoke("set_channel", { dev: staff.channel !== "dev" }); } catch (e) { T("status", "§c" + MC.fit(String(e), 200)); return; }
+    T("status", staff.channel === "dev" ? "§dCanal Dev · buscando versión..." : "§7Canal Beta · buscando versión...");
+    renderSettings();
+    await selfUpdate();
+    return;
+  }
   if (a === "repair") { go("home"); play(true, false); return; }
   renderSettings();
 }
@@ -506,12 +521,12 @@ function modName(file) {
 /* campo de texto con la fuente del juego: el <input> real va invisible encima */
 let caretOn = true;
 const fields = [];
-function bindField(fieldId, inputId, txtId, value, max, onChange) {
+function bindField(fieldId, inputId, txtId, value, max, onChange, secret) {
   const f = $(fieldId), i = $(inputId);
   if (!f || !i) return;
   i.value = value || "";
   const draw = () => {
-    const v = i.value, focused = document.activeElement === i;
+    const v = secret ? "•".repeat(i.value.length) : i.value, focused = document.activeElement === i;
     const shown = MC.width(v) > max ? "..." + v.slice(-Math.floor(max / 6)) : v;
     T(txtId, shown + (focused && caretOn ? "_" : ""), { c: "f" });
   };
@@ -640,7 +655,9 @@ async function selfUpdate() {
   }
 }
 
+let staff = { staff: false, channel: "beta" };
 async function boot() {
+  try { staff = await invoke("staff_status"); } catch (_) { }
   await selfUpdate();
   const st = await invoke("get_state");
   settings = st.settings; appVersion = st.version; msAvailable = st.ms_available;
