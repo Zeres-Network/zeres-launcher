@@ -1,9 +1,10 @@
 """Servidor de desarrollo: sirve ui/ con un simulador del nucleo (dev/shim.js) para ver la interfaz en un navegador.
-La carpeta theme sale de la instalacion real (%APPDATA%/ZeresLauncher/theme), asi que hay que abrir el launcher una vez."""
+La carpeta theme sale de la instalacion real (%APPDATA%/ZeresLauncher/theme o ~/.local/share/ZeresLauncher/theme), asi que hay que abrir el launcher una vez."""
 import http.server, os, sys
 ROOT = os.path.dirname(os.path.abspath(__file__))
 UI = os.path.join(ROOT, "..", "ui")
-THEME = os.path.join(os.environ["APPDATA"], "ZeresLauncher", "theme")
+DATA = os.environ.get("APPDATA") or os.environ.get("XDG_DATA_HOME") or os.path.expanduser("~/.local/share")
+THEME = os.path.join(DATA, "ZeresLauncher", "theme")
 
 class H(http.server.SimpleHTTPRequestHandler):
     def translate_path(self, path):

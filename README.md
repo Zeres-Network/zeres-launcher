@@ -20,13 +20,29 @@ Hecho desde cero con Rust + Tauri 2. La interfaz es HTML/CSS/JS sin frameworks.
   - Microsoft: falta el client ID de Azure aprobado por Mojang (`auth.rs`, `MS_CLIENT_ID`).
 
 ## Datos del jugador
-`%APPDATA%\ZeresLauncher`: `launcher.json` (ajustes y cuentas), `instances/`, `versions/`, `libraries/`, `assets/`, `runtime/` (Java) y `theme/`.
+`%APPDATA%\ZeresLauncher` en Windows, `~/.local/share/ZeresLauncher` en Linux: `launcher.json` (ajustes y cuentas), `instances/`, `versions/`, `libraries/`, `assets/`, `runtime/` (Java) y `theme/`.
 
 ## Compilar
 ```
 npm install
 npx tauri build          # instalador en src-tauri/target/release/bundle/nsis/
 ```
+### Linux
+Mismo código; `src-tauri/tauri.linux.conf.json` cambia los paquetes a AppImage, `.rpm` y `.deb`. En Linux el launcher
+usa el Java de Mojang para Linux, nativos `.so` y, en portátiles con NVIDIA (driver propietario), abre el juego en la
+gráfica dedicada.
+
+Fedora (sin tocar el sistema, dentro de un toolbox):
+```
+toolbox create zeres-build
+toolbox run -c zeres-build sudo dnf install -y rust cargo nodejs npm webkit2gtk4.1-devel gtk3-devel libsoup3-devel \
+    openssl-devel librsvg2-devel libappindicator-gtk3-devel patchelf file
+toolbox run -c zeres-build sh -c "npm ci && npx tauri build"
+sudo dnf install ./src-tauri/target/release/bundle/rpm/*.rpm     # fuera del toolbox
+```
+Ubuntu/Debian: `sudo apt install libwebkit2gtk-4.1-dev libgtk-3-dev librsvg2-dev libayatana-appindicator3-dev libssl-dev patchelf`
+y lo mismo (`npm ci && npx tauri build`). El AppImage que se reparte a todas las distros sale del workflow (Ubuntu 22.04).
+
 Para ver la interfaz en un navegador sin compilar, con un simulador del núcleo: `python dev/serve.py 8770` (hace falta haber abierto el launcher una vez, para que exista `theme/`).
 
 Pruebas sin interfaz: `zeres-launcher.exe --selftest cobblemon --launch` (resultado en `%APPDATA%\ZeresLauncher\selftest.log`) y `zeres-launcher.exe --check-update` (busca, descarga y comprueba la firma de la versión nueva sin instalarla; resultado en `update-check.log`).
@@ -39,6 +55,7 @@ Pruebas sin interfaz: `zeres-launcher.exe --selftest cobblemon --launch` (result
 ## Publicar una versión (autoactualización)
 1. Subir `version` en `src-tauri/tauri.conf.json` y en `src-tauri/Cargo.toml`.
 2. `python tools/release.py --notes "qué cambia"`: compila firmado, crea `latest.json` y el release `v<versión>` en GitHub.
+   Después, en Linux, `python3 tools/release.py` (mismas opciones) añade AppImage, `.rpm` y `.deb` a ese release.
 3. Al abrirse, los launchers ya instalados ven la versión nueva, la descargan, comprueban la firma, se instalan y se reinician.
 
 La clave privada de firma **no** está en el repo (`zeres-devtools/zeres-launcher-updater.key`). Si se pierde, los launchers instalados no podrán actualizarse solos: guárdala bien.

@@ -534,8 +534,8 @@ fn open_folder(id: Option<String>) -> Result<(), String> {
         None => settings::base_dir(),
     };
     std::fs::create_dir_all(&dir).map_err(err)?;
-    std::process::Command::new("explorer").arg(dir).spawn().map_err(err)?;
-    Ok(())
+    // explorador de archivos del sistema (Explorer, Nautilus, Dolphin...)
+    tauri_plugin_opener::open_path(dir, None::<&str>).map_err(err)
 }
 
 #[tauri::command]
@@ -543,8 +543,7 @@ fn open_url(url: String) -> Result<(), String> {
     if !(url.starts_with("https://")) {
         return Err("url no permitida".into());
     }
-    std::process::Command::new("rundll32").args(["url.dll,FileProtocolHandler", &url]).spawn().map_err(err)?;
-    Ok(())
+    tauri_plugin_opener::open_url(url, None::<&str>).map_err(err)
 }
 
 // ================================================================== arranque
@@ -609,6 +608,11 @@ fn main() {
     if let Some(i) = args.iter().position(|a| a == "--selftest") {
         selftest(args.get(i + 1).map(String::as_str).unwrap_or("zeres"), args.iter().any(|a| a == "--launch"));
         return;
+    }
+    // Linux con driver propietario de NVIDIA: el renderizado DMABUF de WebKitGTK deja la ventana en blanco
+    #[cfg(target_os = "linux")]
+    if std::path::Path::new("/proc/driver/nvidia/version").exists() && std::env::var_os("WEBKIT_DISABLE_DMABUF_RENDERER").is_none() {
+        std::env::set_var("WEBKIT_DISABLE_DMABUF_RENDERER", "1");
     }
     // prueba del actualizador sin interfaz: busca version nueva, la descarga y comprueba la firma (no instala)
     let check_only = args.iter().any(|a| a == "--check-update");

@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::path::PathBuf;
 
-/// Carpeta de datos: `%APPDATA%\ZeresLauncher`.
+/// Carpeta de datos: `%APPDATA%\ZeresLauncher` en Windows, `~/.local/share/ZeresLauncher` en Linux.
 pub fn base_dir() -> PathBuf {
     dirs::data_dir().unwrap_or_else(|| PathBuf::from(".")).join("ZeresLauncher")
 }

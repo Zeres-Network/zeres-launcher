@@ -14,6 +14,35 @@ const JAVA_MANIFEST: &str =
 const ASSETS_URL: &str = "https://resources.download.minecraft.net";
 const FABRIC_META: &str = "https://meta.fabricmc.net/v2/versions/loader";
 
+// ------------------------------------------------------------------ sistema
+
+/// Nombre del sistema en las reglas de los JSON de Mojang.
+const OS_NAME: &str = if cfg!(windows) { "windows" } else if cfg!(target_os = "macos") { "osx" } else { "linux" };
+/// Extensiones de las librerias nativas que se extraen de los jar `natives-*`.
+const NATIVE_EXT: &[&str] = if cfg!(windows) {
+    &[".dll"]
+} else if cfg!(target_os = "macos") {
+    &[".dylib", ".jnilib"]
+} else {
+    &[".so"]
+};
+/// Plataforma en el manifest de Java de Mojang.
+const JAVA_PLATFORM: &str = if cfg!(windows) {
+    if cfg!(target_arch = "aarch64") { "windows-arm64" } else { "windows-x64" }
+} else if cfg!(target_os = "macos") {
+    if cfg!(target_arch = "aarch64") { "mac-os-arm64" } else { "mac-os" }
+} else {
+    "linux"
+};
+/// Ejecutable de Java dentro del runtime (javaw en Windows para que no salga consola).
+const JAVA_BIN: &str = if cfg!(windows) {
+    "bin/javaw.exe"
+} else if cfg!(target_os = "macos") {
+    "jre.bundle/Contents/Home/bin/java"
+} else {
+    "bin/java"
+};
+
 pub fn versions_dir() -> PathBuf {
     base_dir().join("versions")
 }
@@ -37,7 +66,7 @@ pub fn rules_ok(rules: Option<&Value>, features: &HashMap<String, bool>) -> bool
         let mut matches = true;
         if let Some(os) = rule.get("os") {
             if let Some(name) = os.get("name").and_then(|v| v.as_str()) {
-                matches &= name == "windows";
+                matches &= name == OS_NAME;
             }
             if let Some(arch) = os.get("arch").and_then(|v| v.as_str()) {
                 matches &= arch == "x86" && cfg!(target_arch = "x86") || arch == "x64" || arch == "x86_64";
@@ -174,7 +203,7 @@ pub fn libraries(v: &Value) -> Vec<Library> {
     out
 }
 
-/// Extrae las .dll de las librerias nativas a `dir`.
+/// Extrae las librerias nativas del sistema (.dll, .so, .dylib) a `dir`.
 pub fn extract_natives(libs: &[Library], dir: &Path) -> Result<()> {
     std::fs::create_dir_all(dir)?;
     for lib in libs.iter().filter(|l| l.native) {
@@ -183,7 +212,7 @@ pub fn extract_natives(libs: &[Library], dir: &Path) -> Result<()> {
         for i in 0..zip.len() {
             let mut entry = zip.by_index(i)?;
             let name = entry.name().to_string();
-            if entry.is_dir() || name.starts_with("META-INF") || !(name.ends_with(".dll")) {
+            if entry.is_dir() || name.starts_with("META-INF") || !NATIVE_EXT.iter().any(|e| name.ends_with(e)) {
                 continue;
             }
             let file = Path::new(&name).file_name().map(|n| dir.join(n));
@@ -252,32 +281,39 @@ pub fn logging_job(v: &Value) -> Option<(Job, String)> {
 
 // ------------------------------------------------------------------ Java oficial de Mojang
 
-/// Descarga (si falta) el Java que pide la version y devuelve la ruta de javaw.exe.
+/// Descarga (si falta) el Java que pide la version y devuelve la ruta del ejecutable (javaw.exe en Windows).
 pub async fn ensure_java<F>(v: &Value, parallel: usize, progress: F) -> Result<PathBuf>
 where
     F: Fn(usize, usize) + Send + Sync + 'static,
 {
     let component = v["javaVersion"]["component"].as_str().unwrap_or("java-runtime-delta").to_string();
     let dir = runtime_dir().join(&component);
-    let javaw = dir.join("bin").join("javaw.exe");
+    let javaw = dir.join(JAVA_BIN);
     let marker = dir.join(".zeres-ok");
     if javaw.exists() && marker.exists() {
         return Ok(javaw);
     }
     let all = net::get_json(JAVA_MANIFEST).await?;
-    let entry = all["windows-x64"][&component]
+    let entry = all[JAVA_PLATFORM][&component]
         .as_array()
         .and_then(|a| a.first())
-        .ok_or_else(|| anyhow!("Mojang no tiene Java '{component}' para Windows"))?;
+        .ok_or_else(|| anyhow!("Mojang no tiene Java '{component}' para {JAVA_PLATFORM}"))?;
     let manifest = net::get_json(entry["manifest"]["url"].as_str().unwrap_or_default()).await?;
     let mut jobs = Vec::new();
+    // en Linux y macOS: ejecutables (bin/java...) y enlaces simbolicos del runtime
+    let mut executables = Vec::new();
+    let mut links = Vec::new();
     for (rel, f) in manifest["files"].as_object().into_iter().flatten() {
         let path = dir.join(rel);
         match f["type"].as_str() {
             Some("directory") => {
                 let _ = std::fs::create_dir_all(&path);
             }
+            Some("link") => links.push((path, f["target"].as_str().unwrap_or_default().to_string())),
             Some("file") => {
+                if f["executable"].as_bool() == Some(true) {
+                    executables.push(path.clone());
+                }
                 let raw = &f["downloads"]["raw"];
                 jobs.push(Job {
                     url: raw["url"].as_str().unwrap_or_default().to_string(),
@@ -290,6 +326,19 @@ where
         }
     }
     net::download_all(jobs, parallel, false, progress).await.context("descargando Java")?;
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::PermissionsExt;
+        for p in &executables {
+            std::fs::set_permissions(p, std::fs::Permissions::from_mode(0o755))?;
+        }
+        for (p, target) in &links {
+            let _ = std::fs::remove_file(p);
+            let _ = std::os::unix::fs::symlink(target, p);
+        }
+    }
+    #[cfg(not(unix))]
+    let _ = (executables, links);
     std::fs::write(&marker, entry["version"]["name"].as_str().unwrap_or("ok"))?;
     Ok(javaw)
 }

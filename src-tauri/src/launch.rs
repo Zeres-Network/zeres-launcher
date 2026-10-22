@@ -187,7 +187,7 @@ fn expand(list: &[Value], vars: &HashMap<&str, String>, feats: &HashMap<String, 
 
 pub fn command(id: &str, prep: &Prepared, acc: &Account, settings: &Settings, server: Option<&str>) -> std::process::Command {
     let dir = instance_dir(id);
-    let sep = ";";
+    let sep = if cfg!(windows) { ";" } else { ":" };
     let mut cp: Vec<String> = prep.libs.iter().filter(|l| l.path.exists()).map(|l| l.path.to_string_lossy().to_string()).collect();
     cp.push(mojang::client_jar(&prep.base_id).to_string_lossy().to_string());
     let custom_res = !settings.fullscreen;
@@ -246,5 +246,19 @@ pub fn command(id: &str, prep: &Prepared, acc: &Account, settings: &Settings, se
         use std::os::windows::process::CommandExt;
         cmd.creation_flags(0x0800_0000); // CREATE_NO_WINDOW
     }
+    // portatiles con integrada + NVIDIA (driver propietario): el juego va por la NVIDIA (PRIME render offload)
+    #[cfg(target_os = "linux")]
+    if nvidia_hybrid() && std::env::var_os("__NV_PRIME_RENDER_OFFLOAD").is_none() {
+        cmd.env("__NV_PRIME_RENDER_OFFLOAD", "1").env("__GLX_VENDOR_LIBRARY_NAME", "nvidia").env("__VK_LAYER_NV_optimus", "NVIDIA_only");
+    }
     cmd
+}
+
+/// Driver propietario de NVIDIA y mas de una grafica.
+#[cfg(target_os = "linux")]
+fn nvidia_hybrid() -> bool {
+    let gpus = std::fs::read_dir("/sys/class/drm")
+        .map(|d| d.flatten().filter(|e| e.file_name().to_str().is_some_and(|n| n.starts_with("card") && !n.contains('-'))).count())
+        .unwrap_or(0);
+    gpus > 1 && std::path::Path::new("/proc/driver/nvidia/version").exists()
 }

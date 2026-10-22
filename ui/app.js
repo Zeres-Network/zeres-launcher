@@ -5,7 +5,9 @@ const TAURI = window.__TAURI__;
 const invoke = (cmd, args) => TAURI.core.invoke(cmd, args);
 const listen = (ev, fn) => TAURI.event.listen(ev, e => fn(e.payload));
 const appWindow = TAURI.window.getCurrentWindow();
-const TH = window.ZRES_THEME || "http://zres.localhost/theme/"; // texturas sacadas del Minecraft del jugador (ver theme.rs)
+// texturas sacadas del Minecraft del jugador (ver theme.rs); el protocolo propio es http://zres.localhost en Windows
+// (WebView2) y zres://localhost en Linux y macOS (WebKit)
+const TH = window.ZRES_THEME || (/Windows/.test(navigator.userAgent) ? "http://zres.localhost/theme/" : "zres://localhost/theme/");
 const $ = id => document.getElementById(id);
 
 const INST = {
