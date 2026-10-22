@@ -8,8 +8,9 @@ pub const APP_ID: &str = "1562598911103729724";
 
 pub struct Presence(DiscordIpcClient);
 
-/// Pone la presencia de esa instancia; None si no se ha podido (sin Discord, sin id...).
-pub fn start(instance: &str) -> Option<Presence> {
+/// Pone la presencia de esa instancia; None si no se ha podido (sin Discord, sin id...). `since`: segundos UNIX del
+/// inicio de la partida (para que el contador no vuelva a cero al reponerla).
+pub fn start(instance: &str, since: i64) -> Option<Presence> {
     if APP_ID.is_empty() {
         return None;
     }
@@ -20,14 +21,18 @@ pub fn start(instance: &str) -> Option<Presence> {
     } else {
         ("Zeres Network", "network", "Zeres Network")
     };
-    let now = std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).map(|d| d.as_secs() as i64).unwrap_or(0);
     let act = activity::Activity::new()
         .details(details)
         .state("mc.zeres.fun")
-        .timestamps(activity::Timestamps::new().start(now))
+        .timestamps(activity::Timestamps::new().start(since))
         .assets(activity::Assets::new().large_image("logo").large_text("Zeres Launcher").small_image(small).small_text(small_text));
     client.set_activity(act).ok()?;
     Some(Presence(client))
+}
+
+/// Segundos UNIX de ahora.
+pub fn now() -> i64 {
+    std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).map(|d| d.as_secs() as i64).unwrap_or(0)
 }
 
 impl Presence {

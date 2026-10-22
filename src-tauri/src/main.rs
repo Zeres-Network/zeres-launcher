@@ -392,7 +392,11 @@ async fn run_play(handle: &AppHandle, app: &Arc<App>, id: &str, repair: bool, la
     std::thread::spawn(move || {
         let started = std::time::Instant::now();
         let mut ready = false;
-        let presence = presence_for.and_then(|i| discord::start(&i));
+        // Discord detecta Minecraft por su cuenta unos segundos despues de abrirlo y esa actividad, al ser mas nueva, sale
+        // encima de la nuestra: se vuelve a poner cuando el juego ya ha cargado y otra vez 90 s despues
+        let since = discord::now();
+        let mut presence = presence_for.as_deref().and_then(|i| discord::start(i, since));
+        let mut repaint_at: Option<std::time::Instant> = None;
         let code = loop {
             if let Ok(Some(status)) = child.try_wait() {
                 break status.code().unwrap_or(-1);
@@ -402,6 +406,13 @@ async fn run_play(handle: &AppHandle, app: &Arc<App>, id: &str, repair: bool, la
                 let found = String::from_utf8_lossy(&log).contains("Sound engine started");
                 if found || started.elapsed().as_secs() > 180 {
                     ready = true;
+                    if let Some(i) = presence_for.as_deref() {
+                        if let Some(p) = presence.take() {
+                            p.stop();
+                        }
+                        presence = discord::start(i, since);
+                        repaint_at = Some(std::time::Instant::now() + std::time::Duration::from_secs(90));
+                    }
                     let _ = h.emit("game-ready", json!({"id": idc, "key": key}));
                     match close_mode {
                         1 => h.exit(0),
@@ -412,6 +423,15 @@ async fn run_play(handle: &AppHandle, app: &Arc<App>, id: &str, repair: bool, la
                         }
                         _ => {}
                     }
+                }
+            }
+            if repaint_at.is_some_and(|t| std::time::Instant::now() >= t) {
+                repaint_at = None;
+                if let Some(i) = presence_for.as_deref() {
+                    if let Some(p) = presence.take() {
+                        p.stop();
+                    }
+                    presence = discord::start(i, since);
                 }
             }
             std::thread::sleep(std::time::Duration::from_millis(500));
