@@ -23,9 +23,11 @@ button { font: inherit; color: inherit; background: none; border: 0; cursor: poi
 
 /* ---------------------------------------------------------------- cabecera */
 .bar { position: absolute; left: 0; top: 0; width: 1000px; height: 84px; z-index: 5; }
-.logo-box { position: absolute; left: 50%; top: 13px; transform: translateX(-50%); }
-.logo { width: 376px; height: 50px; display: block; filter: drop-shadow(0 3px 0 #0009); }
-.splash { position: absolute; left: 356px; top: 46px; transform: translate(-50%, -50%) rotate(-16deg); animation: splash .45s ease-in-out infinite alternate;
+.logo-box { position: absolute; left: 50%; top: 6px; transform: translateX(-50%); }
+.logo { width: 338px; height: 45px; display: block; filter: drop-shadow(0 3px 0 #0009); }
+/* rotulo "COBBLEMON" en letras de bloque, alineado a la derecha bajo el logo (como en el menu del juego) */
+.logo-sub { height: 28px; width: auto; display: block; margin: 2px 0 0 auto; image-rendering: pixelated; filter: drop-shadow(0 3px 0 #0009); }
+.splash { position: absolute; left: 340px; top: 2px; transform: translate(-50%, -50%) rotate(-16deg); animation: splash .45s ease-in-out infinite alternate;
           cursor: pointer; white-space: nowrap; }
 @keyframes splash { from { transform: translate(-50%, -50%) rotate(-16deg) scale(1); } to { transform: translate(-50%, -50%) rotate(-16deg) scale(1.08); } }
 .bar .wb { position: absolute; top: 10px; width: 36px; height: 36px; }
