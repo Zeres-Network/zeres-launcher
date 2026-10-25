@@ -6,6 +6,14 @@
   --body1: #f4f5f8; --body2: #e6e8ee; --area: #eef0f4; --line: #d5d8e0; --shadow: #c9cdd6;
   --card: #ffffff; --card2: #f7f8fa; --locked: #ebedf1; --track: #e3e5eb; --txt: #2a2d36; --dim: #80869a;
   --green1: #35c46e; --green2: #1f8e4a; --green-d: #16693a; --gold1: #f7b733; --gold2: #d48a0c; --gold-d: #8e5a00;
+  --btn1: #ffffff; --btn2: #eef0f4; --edge: #c4c8d2; --slot: #f1f2f6; --grey1: #e6e8ec; --grey2: #d6d9e0; --soft: #0000001a;
+}
+/* tema oscuro: misma cabecera roja, cuerpo grafito y texto claro (Ajustes > Launcher > Menús) */
+:root[data-theme="dark"] {
+  --ink: #0f0f12; --body1: #1e2027; --body2: #16181d; --area: #22252c; --line: #3a3e4a; --shadow: #0e0f13;
+  --card: #2e3139; --card2: #272a31; --locked: #23262d; --track: #3a3e4a; --txt: #e8eaf0; --dim: #9aa0b2;
+  --btn1: #3a3e4a; --btn2: #30333c; --edge: #4a4f5c; --slot: #1f2128; --grey1: #282b32; --grey2: #33363f; --soft: #00000066;
+  color-scheme: dark;
 }
 * { box-sizing: border-box; margin: 0; padding: 0; }
 html, body { width: 1000px; height: 620px; overflow: hidden; background: var(--ink); }
@@ -38,14 +46,14 @@ button { font: inherit; color: inherit; background: none; border: 0; cursor: poi
 .beta { margin-left: 2px; padding: 6px 10px 4px; border-radius: 7px; background: var(--red-d); box-shadow: inset 0 2px 0 #ffffff26; }
 .beta:empty { display: none; }
 .wb { width: 30px; height: 30px; display: grid; place-items: center; border-radius: 50%; margin-left: 8px;
-      background: linear-gradient(#ffffff, #eef0f4); box-shadow: 0 0 0 2px var(--red-d), 0 2px 0 var(--red-d); }
+      background: linear-gradient(var(--btn1), var(--btn2)); box-shadow: 0 0 0 2px var(--red-d), 0 2px 0 var(--red-d); }
 .wb:hover { background: linear-gradient(#ffffff, #ffe3e4); }
 .wb.x:hover { background: linear-gradient(#ff8a8f, var(--red)); }
 
 /* ---------------------------------------------------------------- paneles (antes pantallas) */
 .body { position: relative; overflow: hidden; }
 .scr { position: absolute; border-radius: 10px; overflow: hidden; background: var(--card);
-       box-shadow: 0 0 0 2px var(--line), 0 3px 0 2px #0000001a; }
+       box-shadow: 0 0 0 2px var(--line), 0 3px 0 2px var(--soft); }
 .scr-left { left: 18px; top: 14px; width: 236px; height: 514px; }
 .scr-main { left: 270px; top: 14px; width: 712px; height: 514px; background: var(--area); }
 .hinge { display: none; }
@@ -64,18 +72,18 @@ button { font: inherit; color: inherit; background: none; border: 0; cursor: poi
 .t canvas { display: block; }
 
 /* ---------------------------------------------------------------- piezas */
-.card { position: absolute; border-radius: 9px; background: var(--card); box-shadow: 0 0 0 2px var(--line), 0 3px 0 2px #0000001a; }
+.card { position: absolute; border-radius: 9px; background: var(--card); box-shadow: 0 0 0 2px var(--line), 0 3px 0 2px var(--soft); }
 .card-title { margin-bottom: 6px; padding-left: 8px; position: relative; }
 .card-title::before { content: ""; position: absolute; left: 0; top: -2px; width: 4px; height: 18px; border-radius: 2px; background: var(--red); }
 
 /* botones: blancos (neutros), verdes (aceptar) y grises (desactivados) */
 .mcbtn { position: relative; height: 40px; display: inline-flex; align-items: center; justify-content: center; border-radius: 8px;
-         background: linear-gradient(#ffffff, #eef0f4); box-shadow: 0 0 0 2px #c4c8d2, 0 3px 0 2px var(--shadow); }
+         background: linear-gradient(var(--btn1), var(--btn2)); box-shadow: 0 0 0 2px var(--edge), 0 3px 0 2px var(--shadow); }
 .mcbtn:hover { box-shadow: 0 0 0 2px var(--red), 0 3px 0 2px var(--shadow); }
 .mcbtn:active { transform: translateY(1px); }
 .mcbtn.green { background: linear-gradient(var(--green1), var(--green2)); box-shadow: 0 0 0 2px var(--green-d), 0 3px 0 2px var(--green-d); }
 .mcbtn.green:hover { box-shadow: 0 0 0 2px #fff, 0 3px 0 2px var(--green-d); }
-.mcbtn.off, .mcbtn:disabled { background: #e6e8ec; box-shadow: 0 0 0 2px #d6d9e0; cursor: default; filter: none; transform: none; }
+.mcbtn.off, .mcbtn:disabled { background: var(--grey1); box-shadow: 0 0 0 2px var(--grey2); cursor: default; filter: none; transform: none; }
 .mcbtn.sq { width: 48px; height: 48px; }
 .mcbtn.w400 { width: 400px; } .mcbtn.w196 { width: 180px; } .mcbtn.w300 { width: 300px; }
 .slider { position: relative; height: 40px; border-radius: 8px; cursor: pointer; background: var(--card); box-shadow: 0 0 0 2px var(--line), inset 0 3px 0 var(--track); }
@@ -89,11 +97,11 @@ button { font: inherit; color: inherit; background: none; border: 0; cursor: poi
 .chk { display: flex; align-items: center; gap: 10px; cursor: pointer; height: 40px; padding: 0 8px; border-radius: 8px;
        background: var(--card); box-shadow: 0 0 0 2px var(--line); }
 .chk:hover { box-shadow: 0 0 0 2px var(--red); }
-.chk i { width: 24px; height: 24px; border-radius: 6px; flex: none; background: var(--card); box-shadow: 0 0 0 2px #c4c8d2; position: relative; }
+.chk i { width: 24px; height: 24px; border-radius: 6px; flex: none; background: var(--card); box-shadow: 0 0 0 2px var(--edge); position: relative; }
 .chk.on i { background: var(--green1); box-shadow: 0 0 0 2px var(--green-d); }
 .chk.on i::after { content: ""; position: absolute; left: 8px; top: 3px; width: 6px; height: 12px; border: solid #fff; border-width: 0 4px 4px 0; transform: rotate(45deg); }
 .field { position: relative; display: flex; align-items: center; height: 40px; width: 400px; padding: 0 10px; cursor: text; border-radius: 8px;
-         background: var(--card); box-shadow: 0 0 0 2px #c4c8d2, inset 0 3px 0 var(--track); }
+         background: var(--card); box-shadow: 0 0 0 2px var(--edge), inset 0 3px 0 var(--track); }
 .field.focus { box-shadow: 0 0 0 2px var(--red), inset 0 3px 0 var(--track); }
 .field input { position: absolute; inset: 0; opacity: 0; cursor: text; }
 
@@ -104,14 +112,14 @@ button { font: inherit; color: inherit; background: none; border: 0; cursor: poi
 .acct { display: flex; flex-direction: column; align-items: center; gap: 7px; cursor: pointer; padding: 8px 6px; border-radius: 9px; width: 100%;
         background: var(--card2); box-shadow: 0 0 0 2px var(--line); }
 .acct:hover { box-shadow: 0 0 0 2px var(--red); }
-.acct-head { width: 84px; height: 84px; border-radius: 8px; padding: 5px; background: #f1f2f6; box-shadow: 0 0 0 2px var(--line), inset 0 3px 0 var(--track); }
+.acct-head { width: 84px; height: 84px; border-radius: 8px; padding: 5px; background: var(--slot); box-shadow: 0 0 0 2px var(--line), inset 0 3px 0 var(--track); }
 .acct-head canvas { width: 74px; height: 74px; display: block; border-radius: 3px; }
 .inst { width: 100%; height: 122px; position: relative; cursor: pointer; border-radius: 10px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px;
         background: linear-gradient(var(--card), var(--card2)); box-shadow: 0 0 0 2px var(--line), 0 3px 0 2px var(--shadow); transition: transform .08s; }
 .inst .ico { width: 64px; height: 64px; display: block; }
 .inst:hover { box-shadow: 0 0 0 2px var(--red), 0 3px 0 2px var(--shadow); }
 .inst:active { transform: translateY(1px); }
-.inst.on { box-shadow: 0 0 0 3px var(--red), 0 4px 0 3px #e8393f40; background: var(--card); }
+.inst.on { box-shadow: 0 0 0 3px var(--red), 0 4px 0 3px var(--soft); background: var(--card); }
 .inst.on::before { content: ""; position: absolute; left: 0; right: 0; top: 0; height: 5px; border-radius: 10px 10px 0 0; background: var(--red); }
 .tip { position: absolute; z-index: 9; display: none; padding: 7px 9px 5px; pointer-events: none; border-radius: 7px; background: #1a1a1ff0; box-shadow: 0 0 0 2px var(--red); }
 
@@ -130,7 +138,7 @@ button { font: inherit; color: inherit; background: none; border: 0; cursor: poi
 @keyframes splash { from { transform: translate(-50%, -50%) rotate(-14deg) scale(1); } to { transform: translate(-50%, -50%) rotate(-14deg) scale(1.08); } }
 
 .server { left: 18px; top: 248px; width: 676px; height: 76px; padding: 6px; display: flex; gap: 10px; }
-.fav { width: 64px; height: 64px; flex: none; border-radius: 7px; background: #f1f2f6; box-shadow: 0 0 0 2px var(--line); }
+.fav { width: 64px; height: 64px; flex: none; border-radius: 7px; background: var(--slot); box-shadow: 0 0 0 2px var(--line); }
 .server canvas { width: 64px; height: 64px; display: block; }
 .srv-txt { display: flex; flex-direction: column; gap: 4px; padding-top: 3px; }
 .srv-right { position: absolute; right: 12px; top: 10px; display: flex; gap: 8px; align-items: flex-start; }
@@ -161,7 +169,7 @@ button { font: inherit; color: inherit; background: none; border: 0; cursor: poi
 /* botones pequenos (novedades, ajustes, perfil) */
 .navs { position: absolute; right: 18px; top: 456px; display: flex; gap: 12px; }
 .nbtn { width: 56px; height: 46px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; border-radius: 10px;
-        background: linear-gradient(#ffffff, #eef0f4); box-shadow: 0 0 0 2px #c4c8d2, 0 4px 0 2px var(--shadow); }
+        background: linear-gradient(var(--btn1), var(--btn2)); box-shadow: 0 0 0 2px var(--edge), 0 4px 0 2px var(--shadow); }
 .nbtn canvas { width: 28px; height: 28px; }
 .nbtn:hover, .nbtn.on { box-shadow: 0 0 0 2px var(--red), 0 4px 0 2px var(--shadow); }
 
@@ -179,7 +187,7 @@ button { font: inherit; color: inherit; background: none; border: 0; cursor: poi
 .prof { background: var(--area); }
 .prof.on { display: grid; grid-template-columns: 1fr 300px; }
 .prof-stage { position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 18px; cursor: grab;
-              background: radial-gradient(ellipse at 50% 62%, #ffffff, transparent 62%); }
+              background: radial-gradient(ellipse at 50% 62%, var(--card), transparent 62%); }
 .prof-stage:active { cursor: grabbing; }
 .viewer { width: 240px; height: 340px; perspective: 900px; display: grid; place-items: center; }
 .player { position: relative; width: 0; height: 0; transform-style: preserve-3d; }
@@ -201,7 +209,7 @@ button { font: inherit; color: inherit; background: none; border: 0; cursor: poi
 .acc:hover .del { opacity: 1; }
 .prof-add { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
 .bbtn { height: 42px; display: flex; align-items: center; justify-content: center; cursor: pointer; border-radius: 9px;
-        background: linear-gradient(#ffffff, #eef0f4); box-shadow: 0 0 0 2px #c4c8d2, 0 3px 0 2px var(--shadow); }
+        background: linear-gradient(var(--btn1), var(--btn2)); box-shadow: 0 0 0 2px var(--edge), 0 3px 0 2px var(--shadow); }
 .bbtn:hover { box-shadow: 0 0 0 2px var(--red), 0 3px 0 2px var(--shadow); }
 .bbtn:active { transform: translateY(1px); }
 .bbtn.green { background: linear-gradient(var(--green1), var(--green2)); box-shadow: 0 0 0 2px var(--green-d), 0 3px 0 2px var(--green-d); }

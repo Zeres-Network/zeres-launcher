@@ -26,13 +26,24 @@ function anyRunning(id) { return [...running].some(k => k.startsWith(id + ":"));
 function accountRunning(id) { const a = activeAccount(); return !!a && running.has(id + ":" + a.uuid); }
 
 /* ================================================================== utilidades */
+// tema de los menus (claro u oscuro): se guarda en este equipo y se aplica antes de pintar nada
+function isDark() { return document.documentElement.dataset.theme === "dark"; }
+function applyTheme(dark) { document.documentElement.dataset.theme = dark ? "dark" : "light"; }
+try { applyTheme(localStorage.getItem("zeres-theme") === "dark"); } catch (_) { applyTheme(false); }
+function setTheme(dark) {
+  applyTheme(dark);
+  try { localStorage.setItem("zeres-theme", dark ? "dark" : "light"); } catch (_) { }
+  // el texto se pinta en canvas: hay que volver a dibujarlo con los colores del tema nuevo
+  renderStatic(document);
+  renderHome();
+}
 // estilo C: el texto va oscuro y sin sombra salvo encima de algo de color (cabecera roja, botones, panoramica...)
 const DARK = ".bar, .play, .mcbtn.green, .bbtn.green, .wb, .tip, .logo-box, .tab.on, .acc .del, .pill-dark";
 function T(el, text, opt) {
   el = typeof el === "string" ? $(el) : el;
   if (!el) return;
   const o = Object.assign({}, opt);
-  if (o.light === undefined) o.light = !el.closest(DARK);
+  if (o.light === undefined) o.light = !isDark() && !el.closest(DARK);
   MC.set(el, text, o);
 }
 function img(src) { return new Promise((ok, ko) => { const i = new Image(); i.crossOrigin = "anonymous"; i.onload = () => ok(i); i.onerror = ko; i.src = src; }); }
@@ -428,8 +439,9 @@ function renderSettings() {
     h += staff.staff ? btn("Canal: " + (staff.channel === "dev" ? "§dDev" : "Beta"), "channel") : btn("Canal: Beta", "channel", "off");
     h += btn("Descargas a la vez: " + s.parallel, "dl");
     h += btn("Panorámica animada: " + yes(s.animated), "anim");
+    h += btn("Menús: " + (isDark() ? "Oscuro" : "Claro"), "theme");
     h += btn("Abrir carpeta del launcher", "folder");
-    h += btn("Buscar actualizaciones", "refresh");
+    h += btn("Buscar actualizaciones", "refresh", "wide");
     h += note("Origen de los modpacks", "7");
     h += `<label class="field wide" id="manField" style="width:100%"><span class="t" id="manTxt"></span><input id="manInput" spellcheck="false"></label>`;
     h += note(staff.staff ? "Código de staff §a(" + staff.name + ")" : "Código de staff", "7");
@@ -506,6 +518,7 @@ async function settingAction(a) {
   if (a === "close") await save({ close_mode: (s.close_mode + 1) % 3 });
   if (a === "dl") await save({ parallel: s.parallel >= 16 ? 2 : s.parallel * 2 });
   if (a === "anim") await save({ animated: !s.animated });
+  if (a === "theme") setTheme(!isDark());
   if (a === "folder") invoke("open_folder", { id: null });
   if (a === "ifolder") invoke("open_folder", { id: current });
   if (a === "refresh") { await refreshInstances(true); }
