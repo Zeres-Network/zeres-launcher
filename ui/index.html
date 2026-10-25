@@ -7,7 +7,7 @@
 </head>
 <body>
 <div class="win">
-  <!-- cabecera del aparato (estilo Pokepad): lente, lucecitas, pestaña con el logo y botones de ventana. Se arrastra. -->
+  <!-- cabecera roja del estilo C «Poké Ball»: botón de la Poké Ball, logo, versión y botones de ventana. Se arrastra. -->
   <header class="bar" data-tauri-drag-region>
     <i class="lens" data-tauri-drag-region></i>
     <i class="led r" data-tauri-drag-region></i><i class="led y" data-tauri-drag-region></i><i class="led g" data-tauri-drag-region></i>
@@ -33,13 +33,13 @@
 
     <!-- pantalla izquierda: cuenta y modalidades -->
     <nav class="side">
-      <span class="t side-title" data-t="§e§lCUENTA"></span>
+      <span class="t side-title" data-t="§7§lCUENTA"></span>
       <div class="acct" id="acct" title="Perfil y cuentas">
         <div class="acct-head"><canvas width="8" height="8" id="sideHead"></canvas></div>
         <span class="t" id="sideName"></span>
         <span class="t" id="sideKind"></span>
       </div>
-      <span class="t side-title" data-t="§e§lMODALIDADES"></span>
+      <span class="t side-title" data-t="§7§lMODALIDADES"></span>
       <div class="inst" data-inst="cobblemon"><canvas width="16" height="16" class="ico"></canvas><span class="t" id="lbl-cobblemon"></span><span class="t" id="sub-cobblemon"></span></div>
       <div class="inst" data-inst="zeres"><canvas width="16" height="16" class="ico"></canvas><span class="t" id="lbl-zeres"></span><span class="t" id="sub-zeres"></span></div>
     </nav>
@@ -62,12 +62,12 @@
       </div>
 
       <div class="card news-card-home">
-        <span class="t card-title" data-t="§e§lNOVEDADES"></span>
+        <span class="t card-title" data-t="§l NOVEDADES"></span>
         <div class="news-lines" id="newsList"></div>
         <span class="t hidden" id="news"></span>
       </div>
       <div class="card game-card">
-        <span class="t card-title" data-t="§e§lTU PARTIDA"></span>
+        <span class="t card-title" data-t="§l TU PARTIDA"></span>
         <span class="t" id="instName"></span>
         <span class="t" id="instInfo"></span>
         <span class="t" id="instTime"></span>
@@ -99,7 +99,7 @@
         <span class="t prof-hint" data-t="Arrastra para girar" data-c="f"></span>
       </div>
       <div class="prof-side">
-        <span class="t prof-title" data-t="§e§lCUENTAS"></span>
+        <span class="t prof-title" data-t="§l CUENTAS"></span>
         <div class="acc-list" id="accList"></div>
         <div class="prof-add">
           <button class="bbtn green" id="pOff"><span class="t" data-t="+ Sin premium"></span></button>

@@ -6,6 +6,15 @@ const MC = (() => {
     8: "#555555", 9: "#5555FF", a: "#55FF55", b: "#55FFFF", c: "#FF5555", d: "#FF55FF", e: "#FFFF55", f: "#FFFFFF" };
   const NAMES = { black: "0", dark_blue: "1", dark_green: "2", dark_aqua: "3", dark_red: "4", dark_purple: "5", gold: "6", gray: "7",
     dark_gray: "8", blue: "9", green: "a", aqua: "b", red: "c", light_purple: "d", yellow: "e", white: "f" };
+  // estilo C (fondo claro): los mismos codigos § en tonos oscuros que se leen sobre blanco
+  const LIGHT = { 0: "#15171C", 1: "#1E2E8F", 2: "#17703A", 3: "#16707F", 4: "#9E1C22", 5: "#7A2E9E", 6: "#B85C00", 7: "#6B7183",
+    8: "#9AA0AE", 9: "#3557D6", a: "#1E9E4F", b: "#1A8FB5", c: "#D8323A", d: "#B0389E", e: "#A87400", f: "#2A2D36" };
+  function darken(hex) {
+    const n = parseInt(hex.slice(1), 16), r = n >> 16 & 255, g = n >> 8 & 255, b = n & 255, l = 0.299 * r + 0.587 * g + 0.114 * b;
+    if (l <= 140) return hex;
+    const k = 120 / l;
+    return "#" + [r, g, b].map(v => Math.round(v * k).toString(16).padStart(2, "0")).join("");
+  }
   const glyphs = new Map();
   let ready = false;
 
@@ -84,7 +93,7 @@ const MC = (() => {
 
   /** Canvas con el texto; s = pixeles de pantalla por pixel de la fuente. */
   function render(text, opt = {}) {
-    const s = opt.s || 2, parts = parse(String(text), opt.c), shadow = opt.shadow !== false;
+    const s = opt.s || 2, parts = parse(String(text), opt.c), light = !!opt.light, shadow = !light && opt.shadow !== false;
     const w = Math.max(1, parts.reduce((a, p) => a + adv(p.c, p.bold), 0) + 1), top = 3, h = 12;
     const cv = document.createElement("canvas"); cv.width = w * s; cv.height = h * s;
     cv.style.width = w * s + "px"; cv.style.height = h * s + "px"; cv.style.marginTop = -top * s + "px";
@@ -95,7 +104,7 @@ const MC = (() => {
       for (const p of parts) {
         if (p.c !== " ") {
           const gl = glyph(p.c);
-          let col = p.col.startsWith("#") ? p.col : COLORS[p.col];
+          let col = p.col.startsWith("#") ? (light ? darken(p.col) : p.col) : (light ? LIGHT[p.col] : COLORS[p.col]);
           if (pass === 0) { const n = parseInt(col.slice(1), 16); col = `rgb(${(n >> 16 & 255) >> 2},${(n >> 8 & 255) >> 2},${(n & 255) >> 2})`; }
           g.fillStyle = col;
           const off = pass === 0 ? 1 : 0;

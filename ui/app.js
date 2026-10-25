@@ -26,7 +26,15 @@ function anyRunning(id) { return [...running].some(k => k.startsWith(id + ":"));
 function accountRunning(id) { const a = activeAccount(); return !!a && running.has(id + ":" + a.uuid); }
 
 /* ================================================================== utilidades */
-function T(el, text, opt) { MC.set(typeof el === "string" ? $(el) : el, text, opt); }
+// estilo C: el texto va oscuro y sin sombra salvo encima de algo de color (cabecera roja, botones, panoramica...)
+const DARK = ".bar, .play, .mcbtn.green, .bbtn.green, .wb, .tip, .logo-box, .tab.on, .acc .del, .pill-dark";
+function T(el, text, opt) {
+  el = typeof el === "string" ? $(el) : el;
+  if (!el) return;
+  const o = Object.assign({}, opt);
+  if (o.light === undefined) o.light = !el.closest(DARK);
+  MC.set(el, text, o);
+}
 function img(src) { return new Promise((ok, ko) => { const i = new Image(); i.crossOrigin = "anonymous"; i.onload = () => ok(i); i.onerror = ko; i.src = src; }); }
 function renderStatic(root = document) { root.querySelectorAll("[data-t]").forEach(el => T(el, el.dataset.t, { c: el.dataset.c })); }
 async function save(patch) { settings = await invoke("save_settings", { patch }); }
