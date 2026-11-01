@@ -5613,7 +5613,7 @@ dependencies = [
 
 [[package]]
 name = "zeres-launcher"
-version = "0.2.0-dev.8"
+version = "0.2.0-dev.9"
 dependencies = [
  "anyhow",
  "dirs 6.0.0",
