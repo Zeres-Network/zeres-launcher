@@ -282,6 +282,12 @@ pub fn logging_job(v: &Value) -> Option<(Job, String)> {
 // ------------------------------------------------------------------ Java oficial de Mojang
 
 /// Descarga (si falta) el Java que pide la version y devuelve la ruta del ejecutable (javaw.exe en Windows).
+/// Archivos sin los que Java no arranca en Windows ("could not find java.dll" si falta el primero).
+#[cfg(windows)]
+const JAVA_KEY_FILES: &[&str] = &["bin/java.dll", "bin/java.exe", "bin/server/jvm.dll", "lib/modules"];
+#[cfg(not(windows))]
+const JAVA_KEY_FILES: &[&str] = &[];
+
 pub async fn ensure_java<F>(v: &Value, parallel: usize, progress: F) -> Result<PathBuf>
 where
     F: Fn(usize, usize) + Send + Sync + 'static,
@@ -290,9 +296,13 @@ where
     let dir = runtime_dir().join(&component);
     let javaw = dir.join(JAVA_BIN);
     let marker = dir.join(".zeres-ok");
-    if javaw.exists() && marker.exists() {
+    // no basta con que la descarga terminara: si falta un archivo clave (descarga cortada, el antivirus se llevó
+    // java.dll...) se vuelve a pedir, comprobando cada archivo por su huella
+    let complete = |d: &std::path::Path| d.join(JAVA_BIN).exists() && JAVA_KEY_FILES.iter().all(|f| d.join(f).exists());
+    if marker.exists() && complete(&dir) {
         return Ok(javaw);
     }
+    let _ = std::fs::remove_file(&marker);
     let all = net::get_json(JAVA_MANIFEST).await?;
     let entry = all[JAVA_PLATFORM][&component]
         .as_array()
@@ -325,7 +335,7 @@ where
             _ => {}
         }
     }
-    net::download_all(jobs, parallel, false, progress).await.context("descargando Java")?;
+    net::download_all(jobs, parallel, true, progress).await.context("descargando Java")?;
     #[cfg(unix)]
     {
         use std::os::unix::fs::PermissionsExt;
@@ -339,6 +349,9 @@ where
     }
     #[cfg(not(unix))]
     let _ = (executables, links);
+    if !complete(&dir) {
+        return Err(anyhow!("Java no se ha podido descargar entero (¿lo ha bloqueado el antivirus?). Vuelve a darle a Jugar."));
+    }
     std::fs::write(&marker, entry["version"]["name"].as_str().unwrap_or("ok"))?;
     Ok(javaw)
 }
