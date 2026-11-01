@@ -665,6 +665,13 @@ fn selftest(id: &str, launch_game: bool) {
                 first_run_options(&launch::instance_dir(id));
             }
             let mut cmd = launch::command(id, &prep, &acc, &s, direct.as_deref());
+            if std::env::var_os("ZERES_SELFTEST_CMD").is_some() {
+                let args: Vec<String> = cmd.get_args().map(|a| a.to_string_lossy().to_string()).collect();
+                let _ = std::fs::write(settings::base_dir().join("selftest-cmd.json"),
+                    serde_json::to_string(&json!({"java": cmd.get_program().to_string_lossy(), "args": args, "dir": launch::instance_dir(id)})).unwrap_or_default());
+                line("CMD guardado".to_string());
+                return Ok(());
+            }
             let dir = launch::instance_dir(id).join("logs");
             std::fs::create_dir_all(&dir)?;
             let out = std::fs::File::create(dir.join("zeres-launcher.log"))?;
