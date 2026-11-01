@@ -19,8 +19,9 @@ use std::sync::{Arc, Mutex};
 use tauri::{AppHandle, Emitter, Manager, State};
 use tauri_plugin_updater::UpdaterExt;
 
-/// Las dos instancias del launcher (mismo servidor, distinto cliente).
-const INSTANCES: &[&str] = &["zeres", "cobblemon"];
+/// Las instancias del launcher. "rpg" solo existe en el canal dev (esta rama): Minecraft 26.3 contra el servidor de
+/// pruebas del PC del dueño, que el launcher enciende solo (ver local_server).
+const INSTANCES: &[&str] = &["zeres", "cobblemon", "rpg"];
 const DEFAULT_HOST: &str = "zerescobblemon.holy.gg";
 
 struct App {
@@ -372,8 +373,18 @@ async fn run_play(handle: &AppHandle, app: &Arc<App>, id: &str, repair: bool, la
         st.save();
         s = st.clone();
     }
-    // el juego se abre en la portada (la de ZeresClient en Cobblemon); se entra al servidor desde alli con "Jugar"
-    let mut cmd = launch::command(id, &prep, &acc, &s, None);
+    // el juego se abre en la portada (la de ZeresClient en Cobblemon); se entra al servidor desde alli con "Jugar".
+    // Las instancias con servidor propio en el manifest (el RPG test) entran directas, y si es un servidor del PC se
+    // enciende antes.
+    let direct = entry["server"]["host"].as_str().map(|h| format!("{h}:{}", entry["server"]["port"].as_u64().unwrap_or(25565)));
+    if let Some(dir) = entry["local_server"].as_str() {
+        emit("server", "Encendiendo el servidor del RPG", 0, 0);
+        local_server(dir, entry["server"]["port"].as_u64().unwrap_or(25565) as u16).await?;
+    }
+    if direct.is_some() {
+        first_run_options(&launch::instance_dir(id));
+    }
+    let mut cmd = launch::command(id, &prep, &acc, &s, direct.as_deref());
     let log_dir = launch::instance_dir(id).join("logs");
     std::fs::create_dir_all(&log_dir)?;
     let log_path = log_dir.join(format!("zeres-launcher-{}.log", acc.name)); // uno por cuenta: no se pisan
@@ -457,6 +468,65 @@ async fn run_play(handle: &AppHandle, app: &Arc<App>, id: &str, repair: bool, la
     });
     emit("starting", "Abriendo Minecraft...", 0, 0);
     Ok(())
+}
+
+/// Opciones de primera vez para entrar directo a un servidor: sin la pantalla de accesibilidad del primer arranque (que
+/// frena la entrada directa), sin el aviso de multijugador, sin tutorial y en español. Respeta lo demás de options.txt.
+fn first_run_options(inst_dir: &std::path::Path) {
+    let path = inst_dir.join("options.txt");
+    let old = std::fs::read_to_string(&path).unwrap_or_default();
+    let fixed = [("onboardAccessibility", "false"), ("skipMultiplayerWarning", "true"), ("joinedFirstServer", "true"),
+                 ("tutorialStep", "none")];
+    let mut lines: Vec<String> = old.lines().map(str::to_string).collect();
+    for (k, v) in fixed {
+        let line = format!("{k}:{v}");
+        match lines.iter_mut().find(|l| l.starts_with(&format!("{k}:"))) {
+            Some(l) => *l = line,
+            None => lines.push(line),
+        }
+    }
+    if old.is_empty() {
+        lines.push("lang:es_es".to_string());
+    }
+    let _ = std::fs::write(&path, lines.join("\n") + "\n");
+}
+
+/// Enciende el servidor de pruebas del PC (carpeta relativa a la del usuario, con paper-*.jar e iniciar.bat) si no está
+/// ya encendido, sin ventana, y espera a que responda (la primera vez genera el mundo y tarda unos minutos).
+async fn local_server(dir: &str, port: u16) -> anyhow::Result<()> {
+    if ping::status("127.0.0.1", port).await.is_ok() {
+        return Ok(());
+    }
+    let home = std::env::var("USERPROFILE").unwrap_or_default();
+    let path = std::path::Path::new(&home).join(dir);
+    let jar = std::fs::read_dir(&path)
+        .map_err(|_| anyhow::anyhow!("No encuentro el servidor del RPG en {}", path.display()))?
+        .filter_map(|e| e.ok())
+        .map(|e| e.file_name().to_string_lossy().to_string())
+        .find(|n| n.starts_with("paper-") && n.ends_with(".jar"))
+        .ok_or_else(|| anyhow::anyhow!("No hay paper-*.jar en {}", path.display()))?;
+    let java = std::path::Path::new(&home).join("zeres-devtools/jdk25-extracted/jdk-25.0.5+8/bin/java.exe");
+    let java = if java.exists() { java } else { std::path::PathBuf::from("java") };
+    let log = std::fs::File::create(path.join("launcher-servidor.log"))?;
+    let mut cmd = std::process::Command::new(java);
+    cmd.current_dir(&path)
+        .args([r"-Djdk.net.unixdomain.tmpdir=C:\zsock", "-Xms1G", "-Xmx3G", "-jar", &jar, "--nogui"])
+        .stdin(std::process::Stdio::null())
+        .stdout(log.try_clone()?)
+        .stderr(log);
+    #[cfg(windows)]
+    {
+        use std::os::windows::process::CommandExt;
+        cmd.creation_flags(0x0800_0000); // CREATE_NO_WINDOW
+    }
+    cmd.spawn().map_err(|e| anyhow::anyhow!("No se pudo encender el servidor del RPG: {e}"))?;
+    for _ in 0..300 {
+        tokio::time::sleep(std::time::Duration::from_secs(2)).await;
+        if ping::status("127.0.0.1", port).await.is_ok() {
+            return Ok(());
+        }
+    }
+    Err(anyhow::anyhow!("El servidor del RPG no ha arrancado en 10 minutos (mira launcher-servidor.log)"))
 }
 
 /// Novedades del launcher (notas de los releases de GitHub).
@@ -586,7 +656,15 @@ fn selftest(id: &str, launch_game: bool) {
         line(format!("PREPARADO en {:.1}s · java={} · main={} · libs={}", start.elapsed().as_secs_f32(), prep.java.display(), prep.main_class, prep.libs.len()));
         if launch_game {
             let acc = auth::offline("ZeresTest");
-            let mut cmd = launch::command(id, &prep, &acc, &s, None);
+            let direct = entry["server"]["host"].as_str().map(|h| format!("{h}:{}", entry["server"]["port"].as_u64().unwrap_or(25565)));
+            if let Some(dir) = entry["local_server"].as_str() {
+                local_server(dir, entry["server"]["port"].as_u64().unwrap_or(25565) as u16).await?;
+                line("SERVIDOR LOCAL OK".to_string());
+            }
+            if direct.is_some() {
+                first_run_options(&launch::instance_dir(id));
+            }
+            let mut cmd = launch::command(id, &prep, &acc, &s, direct.as_deref());
             let dir = launch::instance_dir(id).join("logs");
             std::fs::create_dir_all(&dir)?;
             let out = std::fs::File::create(dir.join("zeres-launcher.log"))?;

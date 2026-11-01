@@ -13,7 +13,9 @@ const $ = id => document.getElementById(id);
 const INST = {
   zeres: { name: "Zeres Network", ribbon: "§6§lSURVIVAL  §7·  §6§lSKYBLOCK", tile: "red_nether_bricks" },
   // ribbonImg: el mismo rotulo que el titulo del scoreboard del servidor (glifo zeres_logo_scoreboard de Oraxen)
-  cobblemon: { name: "Zeres Cobblemon", ribbon: "§b§lC O B B L E M O N", ribbonImg: "img/cobblemon.png", tile: "lapis_block" }
+  cobblemon: { name: "Zeres Cobblemon", ribbon: "§b§lC O B B L E M O N", ribbonImg: "img/cobblemon.png", tile: "lapis_block" },
+  // solo en el canal dev: el RPG de prueba (Minecraft 26.3, servidor en el PC del dueño que el launcher enciende solo)
+  rpg: { name: "Zeres RPG test", ribbon: "§d§lR P G   T E S T", tile: "purpur_block" }
 };
 const SPLASHES = ["¡Beta!", "¡100% casero!", "¡Hazte con todos!", "¡Código abierto!", "¡Hecho en Rust!", "¡Sin anuncios!", "¡Atrápalos ya!"];
 
@@ -106,6 +108,9 @@ function drawPlayIcon(cv, color) {
 const BALL16 = [".....KKKKKK.....", "...KKRRRRRRKK...", "..KRRRRRRRRRRK..", ".KRLLRRRRRRRRRK.", ".KRLRRRRRRRRRDK.", "KRRRRRRRRRRRRDDK",
   "KRRRRRKKKKRRRDDK", "KKKKKKKWWKKKKKKK", "KKKKKKKWWKKKKKKK", "KWWWWWKKKKWWWGGK", "KWWWWWWWWWWWWGGK", ".KWWWWWWWWWWWGK.",
   ".KWWWWWWWWWWGGK.", "..KWWWWWWWWGGK..", "...KKGGGGGGKK...", ".....KKKKKK....."];
+const SWORD16 = ["............KKK.", "...........KSSK.", "..........KSSsK.", ".........KSSsK..", "........KSSsK...", ".......KSSsK....",
+  "..KK..KSSsK.....", "..KGK.KSsK......", "...KGKSsK.......", "....KGgK........", "....KBKGK.......", "...KBK.KGK......",
+  "..KBK...KK......", ".KBK............", ".KK.............", "................"];
 /** Loseta de 64x64 con degradado, borde y relieve (fondo de los iconos de instancia). */
 function tile(g, c0, c1) {
   const gr = g.createRadialGradient(32, 28, 4, 32, 32, 46);
@@ -131,6 +136,12 @@ async function drawIcons() {
       g.imageSmoothingEnabled = true;
       g.globalAlpha = 0.55; g.filter = "brightness(0)"; g.drawImage(zicon, 9, 11, 48, 48); g.filter = "none"; g.globalAlpha = 1;
       g.drawImage(zicon, 7, 7, 50, 50);
+    } else if (id === "rpg") {
+      tile(g, "#8a4fc8", "#2a0e44");
+      g.imageSmoothingEnabled = false;
+      g.fillStyle = "#00000060"; g.fillRect(14, 52, 36, 4);
+      const pal = { K: "#1a1a1a", S: "#e8eef6", s: "#a9b6c6", G: "#ffd447", g: "#c99a1c", B: "#6b4a2b" };
+      SWORD16.forEach((r, y) => [...r].forEach((c, x) => { if (pal[c]) { g.fillStyle = pal[c]; g.fillRect(8 + x * 3, 6 + y * 3, 3, 3); } }));
     } else {
       tile(g, "#3a80cc", "#0e2648");
       g.imageSmoothingEnabled = false;
@@ -170,7 +181,7 @@ function fmtTime(sec) {
 function instInfo(id) {
   const i = instances[id] || {};
   const mc = "§7Minecraft " + (i.minecraft || "1.21.1");
-  const loader = id === "cobblemon" ? " §8· §7Fabric" + (i.mods ? " §8· §7" + i.mods + " mods" : "") + (i.installed ? " §8· §7pack " + i.installed : "") : " §8· §7Vanilla";
+  const loader = id === "cobblemon" ? " §8· §7Fabric" + (i.mods ? " §8· §7" + i.mods + " mods" : "") + (i.installed ? " §8· §7pack " + i.installed : "") : id === "rpg" ? " §8· §7Servidor en tu PC" : " §8· §7Vanilla";
   return mc + loader;
 }
 /** [texto, modo] del boton grande: modo "play", "upd", "off". */
@@ -189,7 +200,7 @@ function playState() {
 function instLines(id) {
   const i = instances[id] || {}, played = "Jugado: " + fmtTime(i.playtime || 0);
   const l1 = "§7Minecraft " + (i.minecraft || "1.21.1") + (id === "cobblemon" ? " · Fabric" + (i.mods ? " · " + i.mods + " mods" : "") : " · Vanilla");
-  let l2 = id === "cobblemon" ? "§7" + played + (i.installed ? " · pack " + i.installed : "") : "§7Survival y SkyBlock · " + played;
+  let l2 = id === "cobblemon" ? "§7" + played + (i.installed ? " · pack " + i.installed : "") : id === "rpg" ? "§dClases, mazmorras y jefes §7· " + played : "§7Survival y SkyBlock · " + played;
   if (anyRunning(id)) l2 = "§aEn juego §7· " + played;
   else if (i.state === "update") l2 = "§6Actualización disponible" + (i.latest ? " §7· pack " + i.latest : "");
   else if (i.state === "install") l2 = "§eSin instalar §7· pulsa Instalar";

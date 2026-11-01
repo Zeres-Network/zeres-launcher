@@ -1,6 +1,6 @@
 [package]
 name = "zeres-launcher"
-version = "0.2.0-dev.3"
+version = "0.2.0-dev.4"
 description = "Zeres Launcher - launcher de Zeres Network"
 edition = "2021"
 license = "MIT"
