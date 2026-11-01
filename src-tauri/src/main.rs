@@ -19,9 +19,9 @@ use std::sync::{Arc, Mutex};
 use tauri::{AppHandle, Emitter, Manager, State};
 use tauri_plugin_updater::UpdaterExt;
 
-/// Las instancias del launcher. "rpg" solo existe en el canal dev (esta rama): Minecraft 26.3 contra el servidor de
+/// Las instancias del launcher. "tycoon" solo existe en el canal dev (esta rama): Minecraft 26.3 contra el servidor de
 /// pruebas del PC del dueño, que el launcher enciende solo (ver local_server).
-const INSTANCES: &[&str] = &["zeres", "cobblemon", "rpg"];
+const INSTANCES: &[&str] = &["zeres", "cobblemon", "tycoon"];
 const DEFAULT_HOST: &str = "zerescobblemon.holy.gg";
 
 struct App {
@@ -500,7 +500,7 @@ async fn local_server(dir: &str, port: u16) -> anyhow::Result<()> {
     let home = std::env::var("USERPROFILE").unwrap_or_default();
     let path = std::path::Path::new(&home).join(dir);
     let jar = std::fs::read_dir(&path)
-        .map_err(|_| anyhow::anyhow!("No encuentro el servidor del RPG en {}", path.display()))?
+        .map_err(|_| anyhow::anyhow!("No encuentro el servidor de pruebas en {}", path.display()))?
         .filter_map(|e| e.ok())
         .map(|e| e.file_name().to_string_lossy().to_string())
         .find(|n| n.starts_with("paper-") && n.ends_with(".jar"))
@@ -519,14 +519,14 @@ async fn local_server(dir: &str, port: u16) -> anyhow::Result<()> {
         use std::os::windows::process::CommandExt;
         cmd.creation_flags(0x0800_0000); // CREATE_NO_WINDOW
     }
-    cmd.spawn().map_err(|e| anyhow::anyhow!("No se pudo encender el servidor del RPG: {e}"))?;
+    cmd.spawn().map_err(|e| anyhow::anyhow!("No se pudo encender el servidor de pruebas: {e}"))?;
     for _ in 0..300 {
         tokio::time::sleep(std::time::Duration::from_secs(2)).await;
         if ping::status("127.0.0.1", port).await.is_ok() {
             return Ok(());
         }
     }
-    Err(anyhow::anyhow!("El servidor del RPG no ha arrancado en 10 minutos (mira launcher-servidor.log)"))
+    Err(anyhow::anyhow!("El servidor de pruebas no ha arrancado en 10 minutos (mira launcher-servidor.log)"))
 }
 
 /// Novedades del launcher (notas de los releases de GitHub).
