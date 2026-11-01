@@ -15,7 +15,9 @@ const INST = {
   // ribbonImg: el mismo rotulo que el titulo del scoreboard del servidor (glifo zeres_logo_scoreboard de Oraxen)
   cobblemon: { name: "Zeres Cobblemon", ribbon: "§b§lC O B B L E M O N", ribbonImg: "img/cobblemon.png", tile: "lapis_block" },
   // solo en el canal dev: el RPG de prueba (Minecraft 26.3, servidor en el PC del dueño que el launcher enciende solo)
-  tycoon: { name: "Zeres Tycoon test", ribbon: "§6§lT Y C O O N   T E S T", tile: "gold_block" }
+  tycoon: { name: "Zeres Tycoon test", ribbon: "§6§lT Y C O O N   T E S T", tile: "gold_block" },
+  // el Tycoon solo con plugins: Minecraft normal, sin mods, con su paquete de recursos
+  tycoonp: { name: "Zeres Tycoon sin mods", ribbon: "§6§lT Y C O O N   §7S I N   M O D S", tile: "gold_block" }
 };
 const SPLASHES = ["¡Beta!", "¡100% casero!", "¡Hazte con todos!", "¡Código abierto!", "¡Hecho en Rust!", "¡Sin anuncios!", "¡Atrápalos ya!"];
 
@@ -139,7 +141,7 @@ async function drawIcons() {
       g.imageSmoothingEnabled = true;
       g.globalAlpha = 0.55; g.filter = "brightness(0)"; g.drawImage(zicon, 9, 11, 48, 48); g.filter = "none"; g.globalAlpha = 1;
       g.drawImage(zicon, 7, 7, 50, 50);
-    } else if (id === "tycoon") {
+    } else if (id === "tycoon" || id === "tycoonp") {
       tile(g, "#d9a21c", "#4a2e05");
       g.imageSmoothingEnabled = false;
       g.fillStyle = "#00000060"; g.fillRect(14, 52, 36, 4);
@@ -203,7 +205,7 @@ function playState() {
 function instLines(id) {
   const i = instances[id] || {}, played = "Jugado: " + fmtTime(i.playtime || 0);
   const l1 = "§7Minecraft " + (i.minecraft || "1.21.1") + (id === "cobblemon" ? " · Fabric" + (i.mods ? " · " + i.mods + " mods" : "") : " · Vanilla");
-  let l2 = id === "cobblemon" ? "§7" + played + (i.installed ? " · pack " + i.installed : "") : id === "tycoon" ? "§6Fábricas, cintas y renacimientos §7· " + played : "§7Survival y SkyBlock · " + played;
+  let l2 = id === "cobblemon" ? "§7" + played + (i.installed ? " · pack " + i.installed : "") : id === "tycoon" ? "§6Fábricas, cintas y renacimientos §7· " + played : id === "tycoonp" ? "§6Solo plugins y paquete de recursos §7· " + played : "§7Survival y SkyBlock · " + played;
   if (anyRunning(id)) l2 = "§aEn juego §7· " + played;
   else if (i.state === "update") l2 = "§6Actualización disponible" + (i.latest ? " §7· pack " + i.latest : "");
   else if (i.state === "install") l2 = "§eSin instalar §7· pulsa Instalar";
