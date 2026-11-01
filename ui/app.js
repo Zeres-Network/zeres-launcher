@@ -184,7 +184,7 @@ function fmtTime(sec) {
 function instInfo(id) {
   const i = instances[id] || {};
   const mc = "§7Minecraft " + (i.minecraft || "1.21.1");
-  const loader = id === "cobblemon" ? " §8· §7Fabric" + (i.mods ? " §8· §7" + i.mods + " mods" : "") + (i.installed ? " §8· §7pack " + i.installed : "") : id === "tycoon" ? " §8· §7Servidor en tu PC" : " §8· §7Vanilla";
+  const loader = id === "cobblemon" ? " §8· §7Fabric" + (i.mods ? " §8· §7" + i.mods + " mods" : "") + (i.installed ? " §8· §7pack " + i.installed : "") : id === "tycoon" ? " §8· §7Servidor de pruebas" : " §8· §7Vanilla";
   return mc + loader;
 }
 /** [texto, modo] del boton grande: modo "play", "upd", "off". */

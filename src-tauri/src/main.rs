@@ -376,10 +376,17 @@ async fn run_play(handle: &AppHandle, app: &Arc<App>, id: &str, repair: bool, la
     // el juego se abre en la portada (la de ZeresClient en Cobblemon); se entra al servidor desde alli con "Jugar".
     // Las instancias con servidor propio en el manifest (el RPG test) entran directas, y si es un servidor del PC se
     // enciende antes.
-    let direct = entry["server"]["host"].as_str().map(|h| format!("{h}:{}", entry["server"]["port"].as_u64().unwrap_or(25565)));
+    let mut direct = entry["server"]["host"].as_str().map(|h| format!("{h}:{}", entry["server"]["port"].as_u64().unwrap_or(25565)));
     if let Some(dir) = entry["local_server"].as_str() {
-        emit("server", "Encendiendo el servidor del RPG", 0, 0);
-        local_server(dir, entry["server"]["port"].as_u64().unwrap_or(25565) as u16).await?;
+        if has_local_server(dir) {
+            emit("server", "Encendiendo el servidor de pruebas", 0, 0);
+            local_server(dir, entry["server"]["port"].as_u64().unwrap_or(25565) as u16).await?;
+        } else if let Some(public) = entry["public_server"].as_str() {
+            // no es el PC del dueño: se entra por la dirección pública (túnel de playit.gg)
+            direct = Some(public.to_string());
+        } else {
+            return Err(anyhow::anyhow!("Este servidor de pruebas está en el PC del dueño y todavía no tiene dirección pública."));
+        }
     }
     if direct.is_some() {
         first_run_options(&launch::instance_dir(id));
@@ -489,6 +496,17 @@ fn first_run_options(inst_dir: &std::path::Path) {
         lines.push("lang:es_es".to_string());
     }
     let _ = std::fs::write(&path, lines.join("\n") + "\n");
+}
+
+/// ¿Está en este PC el servidor de pruebas (la carpeta con paper-*.jar)? Solo en el del dueño.
+fn has_local_server(dir: &str) -> bool {
+    let home = std::env::var("USERPROFILE").unwrap_or_default();
+    std::fs::read_dir(std::path::Path::new(&home).join(dir))
+        .map(|rd| rd.filter_map(|e| e.ok()).any(|e| {
+            let n = e.file_name().to_string_lossy().to_string();
+            n.starts_with("paper-") && n.ends_with(".jar")
+        }))
+        .unwrap_or(false)
 }
 
 /// Enciende el servidor de pruebas del PC (carpeta relativa a la del usuario, con paper-*.jar e iniciar.bat) si no está
