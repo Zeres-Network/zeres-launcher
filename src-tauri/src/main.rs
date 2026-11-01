@@ -523,8 +523,10 @@ async fn local_server(dir: &str, port: u16) -> anyhow::Result<()> {
         .map(|e| e.file_name().to_string_lossy().to_string())
         .find(|n| n.starts_with("paper-") && n.ends_with(".jar"))
         .ok_or_else(|| anyhow::anyhow!("No hay paper-*.jar en {}", path.display()))?;
+    // el Java del servidor: el de zeres-devtools si está, si no el Java 25 que el launcher ya descargó para el juego
     let java = std::path::Path::new(&home).join("zeres-devtools/jdk25-extracted/jdk-25.0.5+8/bin/java.exe");
-    let java = if java.exists() { java } else { std::path::PathBuf::from("java") };
+    let mojang_java = mojang::runtime_dir().join("java-runtime-epsilon").join("bin").join("java.exe");
+    let java = if java.exists() { java } else if mojang_java.exists() { mojang_java } else { std::path::PathBuf::from("java") };
     let log = std::fs::File::create(path.join("launcher-servidor.log"))?;
     let mut cmd = std::process::Command::new(java);
     cmd.current_dir(&path)

@@ -134,11 +134,14 @@ pub async fn prepare(id: &str, entry: &Value, manifest_url: &str, settings: &Set
     net::download_all(mojang::asset_jobs(&index), parallel.max(16), deep, move |d, t| p("assets", "Descargando recursos del juego", d, t)).await?;
 
     // 3) Java
-    let java = if settings.java_path.trim().is_empty() {
+    // el Java oficial de Mojang se descarga solo; un Java propio (Ajustes) solo se usa si existe y es lo bastante nuevo
+    let need = version["javaVersion"]["majorVersion"].as_u64().unwrap_or(8) as u32;
+    let custom = settings.java_path.trim();
+    let java = if !custom.is_empty() && java_major(std::path::Path::new(custom)).is_some_and(|v| v >= need) {
+        PathBuf::from(custom)
+    } else {
         let p = progress.clone();
         mojang::ensure_java(&version, parallel, move |d, t| p("java", "Descargando Java", d, t)).await?
-    } else {
-        PathBuf::from(settings.java_path.trim())
     };
 
     // 4) nativos
@@ -261,4 +264,31 @@ fn nvidia_hybrid() -> bool {
         .map(|d| d.flatten().filter(|e| e.file_name().to_str().is_some_and(|n| n.starts_with("card") && !n.contains('-'))).count())
         .unwrap_or(0);
     gpus > 1 && std::path::Path::new("/proc/driver/nvidia/version").exists()
+}
+
+
+/// Versión principal (8, 17, 21, 25...) de un Java, o None si no existe o no responde.
+pub fn java_major(path: &std::path::Path) -> Option<u32> {
+    if !path.exists() {
+        return None;
+    }
+    // javaw.exe no escribe nada: se pregunta a su java.exe
+    let exe = if path.file_name().is_some_and(|n| n.eq_ignore_ascii_case("javaw.exe")) { path.with_file_name("java.exe") } else { path.to_path_buf() };
+    let mut cmd = std::process::Command::new(&exe);
+    cmd.arg("-version");
+    #[cfg(windows)]
+    {
+        use std::os::windows::process::CommandExt;
+        cmd.creation_flags(0x0800_0000);
+    }
+    let out = cmd.output().ok()?;
+    let text = String::from_utf8_lossy(&out.stderr).to_string() + &String::from_utf8_lossy(&out.stdout);
+    let v = text.split('"').nth(1)?;
+    let mut parts = v.split(|c: char| c == '.' || c == '-' || c == '_');
+    let first: u32 = parts.next()?.parse().ok()?;
+    if first == 1 {
+        parts.next()?.parse().ok()
+    } else {
+        Some(first)
+    }
 }
