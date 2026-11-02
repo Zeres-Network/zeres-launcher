@@ -17,7 +17,9 @@ const INST = {
   // solo en el canal dev: el RPG de prueba (Minecraft 26.3, servidor en el PC del dueño que el launcher enciende solo)
   tycoon: { name: "Zeres Tycoon test", ribbon: "§6§lT Y C O O N   T E S T", tile: "gold_block" },
   // el Tycoon solo con plugins: Minecraft normal, sin mods, con su paquete de recursos
-  tycoonp: { name: "Zeres Tycoon sin mods", ribbon: "§6§lT Y C O O N   §7S I N   M O D S", tile: "gold_block" }
+  tycoonp: { name: "Zeres Tycoon sin mods", ribbon: "§6§lT Y C O O N   §7S I N   M O D S", tile: "gold_block" },
+  // Open Front: Minecraft normal con su paquete de recursos, en el PC del dueño
+  front: { name: "Open Front", ribbon: "§c§lO P E N   F R O N T", tile: "red_nether_bricks" }
 };
 const SPLASHES = ["¡Beta!", "¡100% casero!", "¡Hazte con todos!", "¡Código abierto!", "¡Hecho en Rust!", "¡Sin anuncios!", "¡Atrápalos ya!"];
 
@@ -106,6 +108,10 @@ function drawPlayIcon(cv, color) {
   const g = cv.getContext("2d"); g.clearRect(0, 0, 9, 9);
   pixels(g, PLAY, { "#": color });
 }
+/** Bandera de conquista de 16x16 (icono de Open Front). */
+const FLAG16 = ["....KK..........", "....KGKKKKKKKK..", "....KGRRRRLLLRK.", "....KGRRRLLLRRK.", "....KGRRLLLRRDK.", "....KGRRRRRRDDK.",
+  "....KGRRRRRDDK..", "....KGKKKKKKK...", "....KG..........", "....KG..........", "....KG..........", "....KG..........", "...KKGK.........",
+  "..KGGGGK........", "..KKKKKK........", "................"];
 /** Poke Ball de 16x16 (la misma que el icono "cobblemon" de Discord). */
 const BALL16 = [".....KKKKKK.....", "...KKRRRRRRKK...", "..KRRRRRRRRRRK..", ".KRLLRRRRRRRRRK.", ".KRLRRRRRRRRRDK.", "KRRRRRRRRRRRRDDK",
   "KRRRRRKKKKRRRDDK", "KKKKKKKWWKKKKKKK", "KKKKKKKWWKKKKKKK", "KWWWWWKKKKWWWGGK", "KWWWWWWWWWWWWGGK", ".KWWWWWWWWWWWGK.",
@@ -141,6 +147,12 @@ async function drawIcons() {
       g.imageSmoothingEnabled = true;
       g.globalAlpha = 0.55; g.filter = "brightness(0)"; g.drawImage(zicon, 9, 11, 48, 48); g.filter = "none"; g.globalAlpha = 1;
       g.drawImage(zicon, 7, 7, 50, 50);
+    } else if (id === "front") {
+      tile(g, "#a32b2b", "#3a0c0c");
+      g.imageSmoothingEnabled = false;
+      g.fillStyle = "#00000060"; g.fillRect(14, 52, 36, 4);
+      const pal = { K: "#1a1a1a", R: "#e3352b", L: "#ff7b6b", D: "#b8261e", G: "#c9ced6" };
+      FLAG16.forEach((r, y) => [...r].forEach((c, x) => { if (pal[c]) { g.fillStyle = pal[c]; g.fillRect(8 + x * 3, 6 + y * 3, 3, 3); } }));
     } else if (id === "tycoon" || id === "tycoonp") {
       tile(g, "#d9a21c", "#4a2e05");
       g.imageSmoothingEnabled = false;
@@ -205,7 +217,7 @@ function playState() {
 function instLines(id) {
   const i = instances[id] || {}, played = "Jugado: " + fmtTime(i.playtime || 0);
   const l1 = "§7Minecraft " + (i.minecraft || "1.21.1") + (id === "cobblemon" ? " · Fabric" + (i.mods ? " · " + i.mods + " mods" : "") : " · Vanilla");
-  let l2 = id === "cobblemon" ? "§7" + played + (i.installed ? " · pack " + i.installed : "") : id === "tycoon" ? "§6Fábricas, cintas y renacimientos §7· " + played : id === "tycoonp" ? "§6Solo plugins y paquete de recursos §7· " + played : "§7Survival y SkyBlock · " + played;
+  let l2 = id === "cobblemon" ? "§7" + played + (i.installed ? " · pack " + i.installed : "") : id === "tycoon" ? "§6Fábricas, cintas y renacimientos §7· " + played : id === "tycoonp" ? "§6Solo plugins y paquete de recursos §7· " + played : id === "front" ? "§cConquista el mapa con tus colegas §7· " + played : "§7Survival y SkyBlock · " + played;
   if (anyRunning(id)) l2 = "§aEn juego §7· " + played;
   else if (i.state === "update") l2 = "§6Actualización disponible" + (i.latest ? " §7· pack " + i.latest : "");
   else if (i.state === "install") l2 = "§eSin instalar §7· pulsa Instalar";

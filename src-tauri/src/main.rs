@@ -21,7 +21,7 @@ use tauri_plugin_updater::UpdaterExt;
 
 /// Las instancias del launcher. "tycoon" solo existe en el canal dev (esta rama): Minecraft 26.3 contra el servidor de
 /// pruebas del PC del dueño, que el launcher enciende solo (ver local_server).
-const INSTANCES: &[&str] = &["zeres", "cobblemon", "tycoon", "tycoonp"];
+const INSTANCES: &[&str] = &["zeres", "cobblemon", "tycoon", "tycoonp", "front"];
 const DEFAULT_HOST: &str = "zerescobblemon.holy.gg";
 
 struct App {
