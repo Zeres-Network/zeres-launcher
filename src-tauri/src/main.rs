@@ -19,9 +19,9 @@ use std::sync::{Arc, Mutex};
 use tauri::{AppHandle, Emitter, Manager, State};
 use tauri_plugin_updater::UpdaterExt;
 
-/// Las instancias del launcher. "tycoon" solo existe en el canal dev (esta rama): Minecraft 26.3 contra el servidor de
-/// pruebas del PC del dueño, que el launcher enciende solo (ver local_server).
-const INSTANCES: &[&str] = &["zeres", "cobblemon", "tycoon", "tycoonp"];
+/// Las instancias de este launcher (para los amigos del dueño, sin canales): Tycoon con su mod y Open Front.
+/// Son servidores del PC del dueño: allí el launcher los enciende solo y los demás entran por su dirección pública.
+const INSTANCES: &[&str] = &["tycoon", "front"];
 const DEFAULT_HOST: &str = "zerescobblemon.holy.gg";
 
 struct App {
@@ -57,8 +57,7 @@ async fn load_manifest(app: &App, force: bool) -> Result<Value, String> {
 
 // ================================================================== canal dev (solo staff)
 
-const BETA_UPDATES: &str = "https://github.com/Zeres-Network/zeres-launcher/releases/latest/download/latest.json";
-const DEV_UPDATES: &str = "https://github.com/Zeres-Network/zeres-launcher/releases/download/canal-dev/latest.json";
+const UPDATES: &str = "https://github.com/Zeres-Network/zeres-launcher/releases/download/launcher-minecraft/latest.json";
 
 /// Nombre del staff si la cuenta activa y su codigo estan en la lista "staff" del manifest:
 /// [{"name": "Dayscraft", "uuid": "(opcional, solo cuentas premium)", "code_sha256": "..."}]. Cada uno tiene su codigo:
@@ -148,10 +147,9 @@ async fn set_channel(app: St<'_>, dev: bool) -> Result<Value, String> {
     Ok(staff_check(&app, false).await)
 }
 
-/// Actualizador del canal elegido. Instala cualquier version distinta de la actual (asi se puede volver de dev a beta).
+/// Actualizador: instala cualquier version distinta de la actual.
 fn updater_for(handle: &AppHandle) -> Result<tauri_plugin_updater::Updater, String> {
-    let dev = handle.state::<Arc<App>>().settings.lock().unwrap().channel == 2;
-    let url = url::Url::parse(if dev { DEV_UPDATES } else { BETA_UPDATES }).map_err(err)?;
+    let url = url::Url::parse(UPDATES).map_err(err)?;
     handle
         .updater_builder()
         .endpoints(vec![url])
@@ -196,9 +194,21 @@ async fn prepare_theme(handle: AppHandle) -> Result<(), String> {
 }
 
 #[tauri::command]
-async fn server_status(app: St<'_>) -> Result<Value, String> {
+async fn server_status(app: St<'_>, id: String) -> Result<Value, String> {
     let m = load_manifest(&app, false).await.ok();
-    let (host, port) = server_of(m.as_ref());
+    let (mut host, mut port) = server_of(m.as_ref());
+    if let Some(entry) = m.as_ref().map(|m| &m["instances"][id.as_str()]) {
+        let local = entry["local_server"].as_str().is_some_and(has_local_server);
+        if local {
+            host = entry["server"]["host"].as_str().unwrap_or("127.0.0.1").to_string();
+            port = entry["server"]["port"].as_u64().unwrap_or(25565) as u16;
+        } else if let Some((h, p)) = entry["public_server"].as_str().and_then(|p| p.rsplit_once(':')) {
+            host = h.to_string();
+            port = p.parse().unwrap_or(25565);
+        } else {
+            return Ok(json!({"online": false, "host": "Sin dirección", "error": "este servidor aún no tiene dirección pública"}));
+        }
+    }
     match ping::status(&host, port).await {
         Ok((v, ms)) => Ok(json!({"online": true, "ping": ms, "host": host, "status": v})),
         Err(e) => {
@@ -379,13 +389,13 @@ async fn run_play(handle: &AppHandle, app: &Arc<App>, id: &str, repair: bool, la
     let mut direct = entry["server"]["host"].as_str().map(|h| format!("{h}:{}", entry["server"]["port"].as_u64().unwrap_or(25565)));
     if let Some(dir) = entry["local_server"].as_str() {
         if has_local_server(dir) {
-            emit("server", "Encendiendo el servidor de pruebas", 0, 0);
+            emit("server", "Encendiendo el servidor", 0, 0);
             local_server(dir, entry["server"]["port"].as_u64().unwrap_or(25565) as u16).await?;
         } else if let Some(public) = entry["public_server"].as_str() {
             // no es el PC del dueño: se entra por la dirección pública (túnel de playit.gg)
             direct = Some(public.to_string());
         } else {
-            return Err(anyhow::anyhow!("Este servidor de pruebas está en el PC del dueño y todavía no tiene dirección pública."));
+            return Err(anyhow::anyhow!("Este servidor todavía no tiene dirección pública."));
         }
     }
     if direct.is_some() {

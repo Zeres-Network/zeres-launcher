@@ -1,7 +1,7 @@
 [package]
-name = "zeres-launcher"
-version = "0.2.0-dev.9"
-description = "Zeres Launcher - launcher de Zeres Network"
+name = "launcher-minecraft"
+version = "1.0.0"
+description = "Launcher Minecraft: Tycoon y Open Front"
 edition = "2021"
 license = "MIT"
 

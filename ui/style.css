@@ -24,6 +24,9 @@ button { font: inherit; color: inherit; background: none; border: 0; cursor: poi
 /* ---------------------------------------------------------------- cabecera */
 .bar { position: absolute; left: 0; top: 0; width: 1000px; height: 84px; z-index: 5; }
 .logo-box { position: absolute; left: 50%; top: 6px; transform: translateX(-50%); }
+.brand { transform: scale(2.4); transform-origin: top center; display: block; filter: drop-shadow(0 3px 0 #0009); }
+.bar .splash { display: none; }
+.boot-title { color: #ffd447; font-size: 34px; margin: 0; }
 .logo { width: 338px; height: 45px; display: block; filter: drop-shadow(0 3px 0 #0009); }
 /* rotulo "COBBLEMON" en letras de bloque, alineado a la derecha bajo el logo (como en el menu del juego) */
 .logo-sub { height: 28px; width: auto; display: block; margin: 2px 0 0 auto; image-rendering: pixelated; filter: drop-shadow(0 3px 0 #0009); }

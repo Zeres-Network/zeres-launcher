@@ -1,4 +1,4 @@
-// Zeres Launcher - interfaz. Habla con el nucleo en Rust (src-tauri) por invoke/eventos.
+// Launcher Minecraft - interfaz. Habla con el nucleo en Rust (src-tauri) por invoke/eventos.
 "use strict";
 
 const TAURI = window.__TAURI__;
@@ -11,19 +11,14 @@ const TH = window.ZRES_THEME || (/Windows/.test(navigator.userAgent) ? "http://z
 const $ = id => document.getElementById(id);
 
 const INST = {
-  zeres: { name: "Zeres Network", ribbon: "§6§lSURVIVAL  §7·  §6§lSKYBLOCK", tile: "red_nether_bricks" },
-  // ribbonImg: el mismo rotulo que el titulo del scoreboard del servidor (glifo zeres_logo_scoreboard de Oraxen)
-  cobblemon: { name: "Zeres Cobblemon", ribbon: "§b§lC O B B L E M O N", ribbonImg: "img/cobblemon.png", tile: "lapis_block" },
-  // solo en el canal dev: el RPG de prueba (Minecraft 26.3, servidor en el PC del dueño que el launcher enciende solo)
-  tycoon: { name: "Zeres Tycoon test", ribbon: "§6§lT Y C O O N   T E S T", tile: "gold_block" },
-  // el Tycoon solo con plugins: Minecraft normal, sin mods, con su paquete de recursos
-  tycoonp: { name: "Zeres Tycoon sin mods", ribbon: "§6§lT Y C O O N   §7S I N   M O D S", tile: "gold_block" }
+  tycoon: { name: "Tycoon", ribbon: "§6§lT Y C O O N", tile: "gold_block" },
+  front: { name: "Open Front", ribbon: "§c§lO P E N   F R O N T", tile: "red_nether_bricks" }
 };
-const SPLASHES = ["¡Beta!", "¡100% casero!", "¡Hazte con todos!", "¡Código abierto!", "¡Hecho en Rust!", "¡Sin anuncios!", "¡Atrápalos ya!"];
+const SPLASHES = ["¡Entre colegas!", "¡100% casero!", "¡Sin anuncios!", "¡Hecho en Rust!", "¡Conquista el mapa!", "¡A fabricar!"];
 
 let settings = null, appVersion = "0.1.0", msAvailable = false;
 let instances = {}, news = null, server = null;
-let current = "zeres", busy = false, splashI = 0, tab = 0, selAcc = null;
+let current = "tycoon", busy = false, splashI = 0, tab = 0, selAcc = null;
 // running: "instancia:uuid" de cada Minecraft abierto (uno por cuenta); starting: instancias abriendose
 const running = new Set(), starting = new Set();
 /** Instancia con algun Minecraft abierto (con cualquier cuenta). */
@@ -106,7 +101,11 @@ function drawPlayIcon(cv, color) {
   const g = cv.getContext("2d"); g.clearRect(0, 0, 9, 9);
   pixels(g, PLAY, { "#": color });
 }
-/** Poke Ball de 16x16 (la misma que el icono "cobblemon" de Discord). */
+/** Bandera de conquista de 16x16 (icono de Open Front). */
+const FLAG16 = ["....KK..........", "....KGKKKKKKKK..", "....KGRRRRLLLRK.", "....KGRRRLLLRRK.", "....KGRRLLLRRDK.", "....KGRRRRRRDDK.",
+  "....KGRRRRRDDK..", "....KGKKKKKKK...", "....KG..........", "....KG..........", "....KG..........", "....KG..........", "...KKGK.........",
+  "..KGGGGK........", "..KKKKKK........", "................"];
+/** Poke Ball de 16x16 (sin usar aquí, la deja el launcher normal). */
 const BALL16 = [".....KKKKKK.....", "...KKRRRRRRKK...", "..KRRRRRRRRRRK..", ".KRLLRRRRRRRRRK.", ".KRLRRRRRRRRRDK.", "KRRRRRRRRRRRRDDK",
   "KRRRRRKKKKRRRDDK", "KKKKKKKWWKKKKKKK", "KKKKKKKWWKKKKKKK", "KWWWWWKKKKWWWGGK", "KWWWWWWWWWWWWGGK", ".KWWWWWWWWWWWGK.",
   ".KWWWWWWWWWWGGK.", "..KWWWWWWWWGGK..", "...KKGGGGGGKK...", ".....KKKKKK....."];
@@ -133,26 +132,18 @@ async function drawIcons() {
     cv.width = 64; cv.height = 64;
     const g = cv.getContext("2d");
     g.clearRect(0, 0, 64, 64);
-    if (id === "zeres") {
-      tile(g, "#3a3a42", "#0b0b0e");
-      const glow = g.createRadialGradient(32, 32, 2, 32, 32, 30);
-      glow.addColorStop(0, "#ff3b3b70"); glow.addColorStop(1, "#ff3b3b00");
-      g.fillStyle = glow; g.fillRect(3, 3, 58, 58);
-      g.imageSmoothingEnabled = true;
-      g.globalAlpha = 0.55; g.filter = "brightness(0)"; g.drawImage(zicon, 9, 11, 48, 48); g.filter = "none"; g.globalAlpha = 1;
-      g.drawImage(zicon, 7, 7, 50, 50);
-    } else if (id === "tycoon" || id === "tycoonp") {
+    if (id === "tycoon") {
       tile(g, "#d9a21c", "#4a2e05");
       g.imageSmoothingEnabled = false;
       g.fillStyle = "#00000060"; g.fillRect(14, 52, 36, 4);
       const pal = { K: "#3a2405", Y: "#ffd447", y: "#e0a92a", W: "#fff3b0", D: "#a8740f" };
       COIN16.forEach((r, y) => [...r].forEach((c, x) => { if (pal[c]) { g.fillStyle = pal[c]; g.fillRect(8 + x * 3, 6 + y * 3, 3, 3); } }));
     } else {
-      tile(g, "#3a80cc", "#0e2648");
+      tile(g, "#a32b2b", "#3a0c0c");
       g.imageSmoothingEnabled = false;
       g.fillStyle = "#00000060"; g.fillRect(14, 52, 36, 4);
       const pal = { K: "#1a1a1a", R: "#e3352b", L: "#ff7b6b", D: "#b8261e", W: "#f2f4f7", G: "#c9ced6" };
-      BALL16.forEach((r, y) => [...r].forEach((c, x) => { if (pal[c]) { g.fillStyle = pal[c]; g.fillRect(8 + x * 3, 6 + y * 3, 3, 3); } }));
+      FLAG16.forEach((r, y) => [...r].forEach((c, x) => { if (pal[c]) { g.fillStyle = pal[c]; g.fillRect(8 + x * 3, 6 + y * 3, 3, 3); } }));
     }
   }
 }
@@ -185,8 +176,8 @@ function fmtTime(sec) {
 }
 function instInfo(id) {
   const i = instances[id] || {};
-  const mc = "§7Minecraft " + (i.minecraft || "1.21.1");
-  const loader = id === "cobblemon" ? " §8· §7Fabric" + (i.mods ? " §8· §7" + i.mods + " mods" : "") + (i.installed ? " §8· §7pack " + i.installed : "") : id === "tycoon" ? " §8· §7Servidor de pruebas" : " §8· §7Vanilla";
+  const mc = "§7Minecraft " + (i.minecraft || "26.3");
+  const loader = id === "tycoon" ? " §8· §7Con mod" + (i.installed ? " §8· §7pack " + i.installed : "") : " §8· §7Vanilla";
   return mc + loader;
 }
 /** [texto, modo] del boton grande: modo "play", "upd", "off". */
@@ -204,8 +195,8 @@ function playState() {
 /** Las dos lineas grises de cada instancia en la lista (como "Elegir mundo"). */
 function instLines(id) {
   const i = instances[id] || {}, played = "Jugado: " + fmtTime(i.playtime || 0);
-  const l1 = "§7Minecraft " + (i.minecraft || "1.21.1") + (id === "cobblemon" ? " · Fabric" + (i.mods ? " · " + i.mods + " mods" : "") : " · Vanilla");
-  let l2 = id === "cobblemon" ? "§7" + played + (i.installed ? " · pack " + i.installed : "") : id === "tycoon" ? "§6Fábricas, cintas y renacimientos §7· " + played : id === "tycoonp" ? "§6Solo plugins y paquete de recursos §7· " + played : "§7Survival y SkyBlock · " + played;
+  const l1 = "§7Minecraft " + (i.minecraft || "26.3") + (id === "tycoon" ? " · Con mod" : " · Vanilla");
+  let l2 = id === "tycoon" ? "§6Fábricas, cintas y renacimientos §7· " + played : "§cConquista el mapa con tus colegas §7· " + played;
   if (anyRunning(id)) l2 = "§aEn juego §7· " + played;
   else if (i.state === "update") l2 = "§6Actualización disponible" + (i.latest ? " §7· pack " + i.latest : "");
   else if (i.state === "install") l2 = "§eSin instalar §7· pulsa Instalar";
@@ -235,17 +226,17 @@ function renderServer() {
   const fav = $("favicon").getContext("2d");
   fav.imageSmoothingEnabled = false; fav.clearRect(0, 0, 64, 64);
   stopPinging();
-  if (!server) { T("srvName", "Zeres Network"); T("srvMotd1", "§8Conectando..."); T("srvMotd2", ""); T("srvPlayers", ""); startPinging(); return; }
+  if (!server) { T("srvName", INST[current].name); T("srvMotd1", "§8Conectando..."); T("srvMotd2", ""); T("srvPlayers", ""); startPinging(); return; }
   if (!server.online) {
     tex("gui/unknown_server.png").then(i => fav.drawImage(i, 0, 0, 64, 64));
-    T("srvName", "Zeres Network"); T("srvMotd1", "§4No se puede conectar con el servidor"); T("srvMotd2", "§8" + MC.fit(server.error ? server.host + " · " + server.error : server.host, 240)); T("srvPlayers", "");
+    T("srvName", INST[current].name); T("srvMotd1", "§4No se puede conectar con el servidor"); T("srvMotd2", "§8" + MC.fit(server.error ? server.host + " · " + server.error : server.host, 240)); T("srvPlayers", "");
     $("pingbar").style.backgroundImage = `url("${TH}gui/server_list/unreachable.png")`;
     return;
   }
   const st = server.status;
   if (st.favicon) img(st.favicon).then(i => fav.drawImage(i, 0, 0, 64, 64)); else tex("gui/unknown_server.png").then(i => fav.drawImage(i, 0, 0, 64, 64));
   const motd = MC.chat(st.description).split("\n");
-  T("srvName", "Zeres Network");
+  T("srvName", INST[current].name);
   if (server.maintenance) {
     // /mantenimiento en el servidor: solo entra el staff
     T("srvMotd1", "§c§lEN MANTENIMIENTO", { c: "7" });
@@ -265,7 +256,7 @@ async function refreshInstances(force) {
     const r = await invoke("instances", { refresh: !!force });
     instances = Object.fromEntries(r.instances.map(i => [i.id, i]));
     news = r.news;
-    if (r.error && !busy) T("status", "§c" + MC.fit("Sin conexión con la network: " + r.error, 200));
+    if (r.error && !busy) T("status", "§c" + MC.fit("Sin conexión: " + r.error, 200));
   } catch (e) { T("status", "§c" + MC.fit(String(e), 200)); }
   renderHome();
 }
@@ -279,7 +270,7 @@ function startPinging() {
 function stopPinging() { clearInterval(pinging); pinging = null; }
 async function refreshServer(manual) {
   if (manual) { T("srvMotd1", "§8Comprobando..."); T("srvMotd2", ""); T("srvPlayers", ""); startPinging(); }
-  try { server = await invoke("server_status"); } catch (e) { server = { online: false, host: "zerescobblemon.holy.gg", error: String(e) }; }
+  try { server = await invoke("server_status", { id: current }); } catch (e) { server = { online: false, host: "", error: String(e) }; }
   if (server.online) server.maintenance = /mantenimiento/i.test(MC.chat(server.status?.description).replace(/§./g, ""));
   lastPing = Date.now();
   renderServer();
@@ -292,6 +283,7 @@ async function selectInstance(id) {
   save({ last_instance: id });
   await setPano();
   renderHome();
+  refreshServer(true);
 }
 
 /* ================================================================== jugar */
@@ -386,16 +378,8 @@ async function openNews() {
     items.push({ h: INST[current].name + " " + (inst.latest || "") });
     inst.notes.forEach(n => items.push(n));
   }
-  try {
-    const r = await invoke("whats_new", { all: true });
-    for (const rel of (r && r.releases) || []) {
-      const notes = notesToItems(rel.notes);
-      items.push({ h: "Zeres Launcher " + rel.version });
-      (notes.length ? notes : ["Mejoras y correcciones."]).forEach(n => items.push(n));
-    }
-  } catch (_) { }
   if (!items.length) items.push("No se han podido cargar las novedades (¿sin internet?).");
-  showNews("§6§lNOVEDADES", "§7Lo último de Zeres", items, "§lVALE");
+  showNews("§6§lNOVEDADES", "§7Lo último", items, "§lVALE");
 }
 /** Notas de un release de GitHub (markdown sencillo) -> lineas. */
 function notesToItems(md) {
@@ -433,16 +417,11 @@ function renderSettings() {
     h += note("En automático se usa el Java oficial de Mojang.");
   } else if (tab === 1) {
     h += btn("Al jugar: " + ["Ocultar launcher", "Cerrar launcher", "No hacer nada"][s.close_mode], "close");
-    h += staff.staff ? btn("Canal: " + (staff.channel === "dev" ? "§dDev" : "Beta"), "channel") : btn("Canal: Beta", "channel", "off");
     h += btn("Descargas a la vez: " + s.parallel, "dl");
     h += btn("Panorámica animada: " + yes(s.animated), "anim");
     h += btn("Abrir carpeta del launcher", "folder");
     h += btn("Buscar actualizaciones", "refresh");
-    h += note("Origen de los modpacks", "7");
-    h += `<label class="field wide" id="manField" style="width:100%"><span class="t" id="manTxt"></span><input id="manInput" spellcheck="false"></label>`;
-    h += note(staff.staff ? "Código de staff §a(" + staff.name + ")" : "Código de staff", "7");
-    h += `<label class="field wide" id="staffField" style="width:100%"><span class="t" id="staffTxt"></span><input id="staffInput" type="password" spellcheck="false"></label>`;
-    h += note("Zeres Launcher " + appVersion + (staff.channel === "dev" ? " (DEV)" : " (BETA)") + " · código abierto");
+    h += note("Launcher Minecraft " + appVersion);
   } else {
     const i = instances[current] || {}, opt = i.optional || [], off = (s.disabled_mods || {})[current] || [];
     h += note("§7" + name + " §8· " + instInfo(current));
@@ -497,13 +476,6 @@ function renderSettings() {
   }
   bindField("jvmField", "jvmInput", "jvmTxt", settings.jvm_args, 290, v => save({ jvm_args: v }));
   bindField("manField", "manInput", "manTxt", settings.manifest_url, 290, v => save({ manifest_url: v }));
-  bindField("staffField", "staffInput", "staffTxt", "", 290, async v => {
-    try { staff = await invoke("set_staff_code", { code: v }); } catch (e) { T("status", "§c" + MC.fit(String(e), 200)); return; }
-    const why = { sin_cuenta: "Inicia sesión en Perfil con tu cuenta antes de poner el código", sin_lista: "No se ha podido descargar la lista de staff: revisa la conexión",
-      codigo: "Ese código no existe", cuenta: "Ese código es de otra cuenta: cambia de cuenta en Perfil", premium: "Ese código es para tu cuenta Microsoft (premium)" };
-    T("status", staff.staff ? "§aCódigo de staff correcto · " + staff.name : v ? "§c" + (why[staff.reason] || "Ese código no vale para esta cuenta") : "§7Código de staff quitado");
-    renderSettings();
-  }, true);
 }
 async function settingAction(a) {
   const s = settings;
@@ -681,7 +653,7 @@ async function boot() {
   settings = st.settings; appVersion = st.version; msAvailable = st.ms_available;
   (st.running || []).forEach(id => running.add(id));
   const cantSave = st.can_save === false;
-  current = settings.last_instance in INST ? settings.last_instance : "zeres";
+  current = settings.last_instance in INST ? settings.last_instance : "tycoon";
   if (!st.theme_ready) {
     $("boot").classList.add("on");
     const un = await listen("theme-progress", p => {
@@ -700,7 +672,7 @@ async function boot() {
   await MC.load(TH);
   $("boot").classList.remove("on");
   renderStatic();
-  T("barBeta", "Zeres Launcher " + appVersion); T("wMinT", "_"); T("wCloseT", "x");
+  T("barBeta", "Launcher Minecraft " + appVersion); T("wMinT", "_"); T("wCloseT", "x");
   await drawIcons();
   await setPano();
   requestAnimationFrame(spin);
@@ -709,15 +681,7 @@ async function boot() {
   refreshServer();
   setInterval(refreshServer, 30000);
 
-  // novedades: si el launcher se acaba de actualizar, se ensena lo nuevo de cada version
   $("nwOk").onclick = () => $("v-news").classList.remove("on");
-  invoke("whats_new", { all: false }).then(r => {
-    if (!r || !r.show) return;
-    const items = [];
-    (r.releases || []).forEach(rel => notesToItems(rel.notes).forEach(n => items.push(n)));
-    if (!items.length) items.push("Mejoras y correcciones.");
-    showNews("§6§l¡NOVEDADES!", r.from ? "§7Zeres Launcher §f" + r.from + " §7» §a" + r.to : "§7Zeres Launcher §a" + r.to, items, "§l¡VAMOS!");
-  }).catch(() => { });
   $("bNews").onclick = () => openNews();
 
   // eventos

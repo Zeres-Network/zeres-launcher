@@ -4,9 +4,9 @@ use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::path::PathBuf;
 
-/// Carpeta de datos: `%APPDATA%\ZeresLauncher` en Windows, `~/.local/share/ZeresLauncher` en Linux.
+/// Carpeta de datos: `%APPDATA%\LauncherMinecraft` en Windows, `~/.local/share/LauncherMinecraft` en Linux.
 pub fn base_dir() -> PathBuf {
-    dirs::data_dir().unwrap_or_else(|| PathBuf::from(".")).join("ZeresLauncher")
+    dirs::data_dir().unwrap_or_else(|| PathBuf::from(".")).join("LauncherMinecraft")
 }
 
 /// Manifest de los modpacks: repo `zeres-network-modpack` de GitHub.
@@ -65,8 +65,8 @@ pub struct Settings {
 impl Default for Settings {
     fn default() -> Self {
         let mut ram = HashMap::new();
-        ram.insert("zeres".to_string(), 4);
-        ram.insert("cobblemon".to_string(), 6);
+        ram.insert("tycoon".to_string(), 4);
+        ram.insert("front".to_string(), 4);
         Settings {
             ram,
             fullscreen: false,
@@ -81,7 +81,7 @@ impl Default for Settings {
             staff_code: String::new(),
             manifest_url: DEFAULT_MANIFEST.to_string(),
             disabled_mods: HashMap::new(),
-            last_instance: "zeres".to_string(),
+            last_instance: "tycoon".to_string(),
             playtime: HashMap::new(),
             last_seen_version: String::new(),
             accounts: Vec::new(),

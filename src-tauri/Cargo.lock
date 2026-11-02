@@ -2140,6 +2140,33 @@ dependencies = [
 ]
 
 [[package]]
+name = "launcher-minecraft"
+version = "1.0.0"
+dependencies = [
+ "anyhow",
+ "dirs 6.0.0",
+ "discord-rich-presence",
+ "futures",
+ "hex",
+ "hickory-resolver",
+ "md5",
+ "reqwest 0.12.28",
+ "serde",
+ "serde_json",
+ "sha1",
+ "sha2",
+ "tauri",
+ "tauri-build",
+ "tauri-plugin-opener",
+ "tauri-plugin-single-instance",
+ "tauri-plugin-updater",
+ "tokio",
+ "url",
+ "uuid 1.28.0",
+ "zip",
+]
+
+[[package]]
 name = "libappindicator"
 version = "0.9.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -5609,33 +5636,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d1afec51604565183aeb5c54c20aeab286120d4e4460f7f76e3e8bb8c0d99473"
 dependencies = [
  "serde",
-]
-
-[[package]]
-name = "zeres-launcher"
-version = "0.2.0-dev.9"
-dependencies = [
- "anyhow",
- "dirs 6.0.0",
- "discord-rich-presence",
- "futures",
- "hex",
- "hickory-resolver",
- "md5",
- "reqwest 0.12.28",
- "serde",
- "serde_json",
- "sha1",
- "sha2",
- "tauri",
- "tauri-build",
- "tauri-plugin-opener",
- "tauri-plugin-single-instance",
- "tauri-plugin-updater",
- "tokio",
- "url",
- "uuid 1.28.0",
- "zip",
 ]
 
 [[package]]

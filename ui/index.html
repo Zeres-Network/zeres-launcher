@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
 <meta charset="utf-8">
-<title>Zeres Launcher</title>
+<title>Launcher Minecraft</title>
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -14,8 +14,7 @@
   <!-- cabecera (se arrastra): logo con el texto amarillo y botones de ventana -->
   <header class="bar" data-tauri-drag-region>
     <div class="logo-box" data-tauri-drag-region>
-      <img src="img/zeres_network.png" class="logo" alt="Zeres Network" data-tauri-drag-region>
-      <img src="img/cobblemon.png" class="logo-sub" alt="Cobblemon" data-tauri-drag-region>
+      <span class="t brand" data-t="§e§lLauncher Minecraft" data-tauri-drag-region></span>
       <span class="t splash" id="splash"></span>
     </div>
     <button class="mcbtn wb" id="wMin" title="Minimizar"><span class="t" id="wMinT"></span></button>
@@ -26,21 +25,13 @@
   <main class="view on" id="v-home">
     <div class="list">
       <span class="t list-title" data-t="Elige dónde jugar"></span>
-      <div class="inst" data-inst="cobblemon" title="Doble clic para jugar">
-        <canvas width="64" height="64" class="ico"></canvas>
-        <div class="txt"><span class="t" id="lbl-cobblemon"></span><span class="t" id="inf1-cobblemon"></span><span class="t" id="inf2-cobblemon"></span></div>
-      </div>
       <div class="inst" data-inst="tycoon" title="Doble clic para jugar">
         <canvas width="64" height="64" class="ico"></canvas>
         <div class="txt"><span class="t" id="lbl-tycoon"></span><span class="t" id="inf1-tycoon"></span><span class="t" id="inf2-tycoon"></span></div>
       </div>
-      <div class="inst" data-inst="tycoonp" title="Doble clic para jugar">
+      <div class="inst" data-inst="front" title="Doble clic para jugar">
         <canvas width="64" height="64" class="ico"></canvas>
-        <div class="txt"><span class="t" id="lbl-tycoonp"></span><span class="t" id="inf1-tycoonp"></span><span class="t" id="inf2-tycoonp"></span></div>
-      </div>
-      <div class="inst" data-inst="zeres" title="Doble clic para jugar">
-        <canvas width="64" height="64" class="ico"></canvas>
-        <div class="txt"><span class="t" id="lbl-zeres"></span><span class="t" id="inf1-zeres"></span><span class="t" id="inf2-zeres"></span></div>
+        <div class="txt"><span class="t" id="lbl-front"></span><span class="t" id="inf1-front"></span><span class="t" id="inf2-front"></span></div>
       </div>
       <span class="t list-sub" data-t="§eServidor"></span>
       <div class="server" id="server" title="Pulsa para comprobar el servidor">
@@ -95,8 +86,8 @@
         <span class="t" data-t="Nombre de usuario" data-c="7"></span>
         <label class="field" id="nameField"><span class="t" id="nameTxt"></span><input id="nameInput" maxlength="16" spellcheck="false" autocomplete="off"></label>
         <span class="t" id="nameErr" data-c="c"></span>
-        <span class="t" data-t="Al entrar en la network te pedirá tu contraseña" data-c="7"></span>
-        <span class="t" data-t="(o crearla la primera vez). Los premium entran directos." data-c="7"></span>
+        <span class="t" data-t="Al entrar en Tycoon te pedirá tu contraseña" data-c="7"></span>
+        <span class="t" data-t="(o crearla la primera vez)." data-c="7"></span>
       </div>
     </div>
     <div class="m-foot">
@@ -133,7 +124,7 @@
 
   <!-- ============================================================ PRIMER ARRANQUE (sin texturas aun) -->
   <section class="boot" id="boot">
-    <img src="img/zeres_network.png" alt="">
+    <h1 class="boot-title">Launcher Minecraft</h1>
     <p id="bootText">Preparando el launcher...</p>
     <div class="boot-bar"><i id="bootBar"></i></div>
     <small>La primera vez se descargan los recursos de Minecraft.</small>
