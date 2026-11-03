@@ -229,6 +229,7 @@ async fn instances(app: St<'_>, refresh: bool) -> Result<Value, String> {
         }));
     }
     Ok(json!({ "instances": out, "news": m.as_ref().ok().map(|m| m["news"].clone()).unwrap_or(Value::Null),
+               "tema_navidad": m.as_ref().ok().map(|m| m["tema_navidad"].clone()).unwrap_or(Value::Null),
                "error": m.err() }))
 }
 
