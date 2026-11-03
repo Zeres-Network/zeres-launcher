@@ -256,18 +256,36 @@ fn save_settings(app: St, patch: Value) -> Value {
 }
 
 #[tauri::command]
-fn add_offline(app: St, name: String) -> Result<Value, String> {
+fn add_offline(app: St, name: String, datos: Option<String>) -> Result<Value, String> {
     let name = name.trim().to_string();
     if !auth::valid_name(&name) {
         return Err("El nombre tiene que tener entre 3 y 16 letras, números o _".into());
     }
     let mut s = app.settings.lock().unwrap();
-    let acc = auth::offline(&name);
+    let mut acc = auth::offline(&name);
+    acc.datos = limpia_datos(datos.unwrap_or_default());
     s.accounts.retain(|a| !(a.kind == "offline" && a.name.eq_ignore_ascii_case(&name)));
     s.active = acc.uuid.clone();
     s.accounts.push(acc);
     s.save();
     Ok(s.public())
+}
+
+fn limpia_datos(d: String) -> String {
+    if d == "si" || d == "no" { d } else { String::new() }
+}
+
+#[tauri::command]
+fn set_account_datos(app: St, uuid: String, datos: String) -> Value {
+    let mut s = app.settings.lock().unwrap();
+    let d = limpia_datos(datos);
+    for a in s.accounts.iter_mut() {
+        if a.uuid == uuid {
+            a.datos = d.clone();
+        }
+    }
+    s.save();
+    s.public()
 }
 
 #[tauri::command]
@@ -304,9 +322,11 @@ async fn ms_login_start(handle: AppHandle, app: St<'_>) -> Result<Value, String>
         }
         .await;
         match result {
-            Ok(acc) => {
+            Ok(mut acc) => {
                 let public = {
                     let mut s = app.settings.lock().unwrap();
+                    // al volver a entrar con Microsoft se queda lo que eligio para la web
+                    acc.datos = s.accounts.iter().find(|a| a.uuid == acc.uuid).map(|a| a.datos.clone()).unwrap_or_default();
                     s.accounts.retain(|a| a.uuid != acc.uuid);
                     s.active = acc.uuid.clone();
                     s.accounts.push(acc);
@@ -363,7 +383,9 @@ async fn run_play(handle: &AppHandle, app: &Arc<App>, id: &str, repair: bool, la
         return Ok(());
     }
     emit("auth", "Iniciando sesión", 0, 0);
-    let acc = auth::ensure_fresh(&acc).await?;
+    let datos_web = acc.datos.clone();
+    let mut acc = auth::ensure_fresh(&acc).await?;
+    acc.datos = datos_web;
     if acc.kind == "microsoft" {
         let mut st = app.settings.lock().unwrap();
         if let Some(a) = st.accounts.iter_mut().find(|a| a.uuid == acc.uuid) {
@@ -665,6 +687,7 @@ fn main() {
             set_channel,
             add_offline,
             remove_account,
+            set_account_datos,
             set_active,
             ms_login_start,
             play,

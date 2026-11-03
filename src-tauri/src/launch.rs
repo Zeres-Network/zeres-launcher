@@ -187,6 +187,13 @@ fn expand(list: &[Value], vars: &HashMap<&str, String>, feats: &HashMap<String, 
 
 pub fn command(id: &str, prep: &Prepared, acc: &Account, settings: &Settings, server: Option<&str>) -> std::process::Command {
     let dir = instance_dir(id);
+    // datos para la web: ZeresClient lo lee y se lo dice a ZeresCore la primera vez que entra (si no ha decidido)
+    let datos = dir.join("zeres-datos.txt");
+    if acc.datos == "si" || acc.datos == "no" {
+        let _ = std::fs::write(&datos, &acc.datos);
+    } else {
+        let _ = std::fs::remove_file(&datos);
+    }
     let sep = ";";
     let mut cp: Vec<String> = prep.libs.iter().filter(|l| l.path.exists()).map(|l| l.path.to_string_lossy().to_string()).collect();
     cp.push(mojang::client_jar(&prep.base_id).to_string_lossy().to_string());

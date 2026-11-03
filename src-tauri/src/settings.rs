@@ -29,6 +29,9 @@ pub struct Account {
     pub expires_at: u64,
     #[serde(default)]
     pub skin_url: String,
+    /// Datos para la web (ZeresCore /privacidad): "si", "no" o "" (decidir en el juego)
+    #[serde(default)]
+    pub datos: String,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]

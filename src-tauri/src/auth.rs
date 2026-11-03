@@ -28,6 +28,7 @@ pub fn offline(name: &str) -> Account {
         refresh_token: String::new(),
         expires_at: 0,
         skin_url: String::new(),
+        datos: String::new(),
     }
 }
 
@@ -146,6 +147,7 @@ pub async fn minecraft_login(ms_token: &str, refresh: &str) -> Result<Account> {
         refresh_token: refresh.into(),
         expires_at: expires,
         skin_url: skin.into(),
+        datos: String::new(),
     })
 }
 

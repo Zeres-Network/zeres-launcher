@@ -437,7 +437,7 @@ function go(v) {
   if (v === "home") renderHome();
   if (v === "settings") renderSettings();
   if (v === "profile") renderProfile();
-  if (v === "add") { $("nameInput").value = ""; T("nameErr", ""); nameRender(); setTimeout(() => $("nameInput").focus(), 0); }
+  if (v === "add") { $("nameInput").value = ""; T("nameErr", ""); addDatos = ""; T("addDatosTxt", datosTxt(addDatos)); nameRender(); setTimeout(() => $("nameInput").focus(), 0); }
 }
 
 /* ================================================================== ajustes */
@@ -646,6 +646,11 @@ async function renderProfile() {
       <button class="del" data-del="${a.uuid}" title="Quitar cuenta"><span class="t"></span></button></div>`).join("");
   if (!accs.length) $("accList").innerHTML = `<div class="acc"><div class="txt"><span class="t" id="noAcc"></span></div></div>`;
   if (!accs.length) T("noAcc", "§7Todavía no hay cuentas");
+  $("pDatos").style.display = act ? "" : "none";
+  if (act) {
+    T("pDatosTxt", datosTxt(act.datos));
+    $("pDatos").onclick = async () => { settings = await invoke("set_account_datos", { uuid: act.uuid, datos: datosNext(act.datos) }); renderProfile(); };
+  }
   for (const el of document.querySelectorAll("[data-acc]")) {
     const a = accs.find(x => x.uuid === el.dataset.acc), ts = el.querySelectorAll(".t");
     await drawHead(el.querySelector("canvas"), a);
@@ -660,7 +665,10 @@ async function renderProfile() {
 }
 
 /* ================================================================== cuentas */
-let msUrl = "";
+let msUrl = "", addDatos = "";
+/** Datos para la web (ZeresCore /privacidad): "si", "no" o "" (decidir en el juego). Se pasa al juego en zeres-datos.txt. */
+const datosTxt = d => "Datos para la web: " + (d === "si" ? "§aSí" : d === "no" ? "§cNo" : "§7decidir en el juego");
+const datosNext = d => d === "" || !d ? "si" : d === "si" ? "no" : "";
 async function msLogin() {
   go("ms");
   T("msCode", ""); T("msLine1", "§7Pidiendo un código a Microsoft..."); T("msLine2", "");
@@ -775,10 +783,11 @@ async function boot() {
   ni.onfocus = () => $("nameField").classList.add("focus");
   ni.onblur = () => { $("nameField").classList.remove("focus"); nameRender(); };
   const addOk = async () => {
-    try { settings = await invoke("add_offline", { name: ni.value }); go("profile"); }
+    try { settings = await invoke("add_offline", { name: ni.value, datos: addDatos }); go("profile"); }
     catch (e) { T("nameErr", String(e), { c: "c" }); }
   };
   $("addOk").onclick = addOk;
+  $("addDatos").onclick = () => { addDatos = datosNext(addDatos); T("addDatosTxt", datosTxt(addDatos)); };
   ni.onkeydown = e => { if (e.key === "Enter") addOk(); };
   document.addEventListener("keydown", e => { if (e.key === "Escape" && !$("v-home").classList.contains("on")) go("home"); });
   document.addEventListener("contextmenu", e => e.preventDefault());
