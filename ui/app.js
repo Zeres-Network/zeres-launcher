@@ -26,27 +26,37 @@ function anyRunning(id) { return [...running].some(k => k.startsWith(id + ":"));
 function accountRunning(id) { const a = activeAccount(); return !!a && running.has(id + ":" + a.uuid); }
 
 /* ================================================================== utilidades */
-// tema de los menus: se guarda en este equipo y se aplica antes de pintar nada. Navidad solo se ofrece al staff hasta que el
-// manifest ponga "tema_navidad": true (cuando salga el trailer); con "obligatorio" sale para todos y no se puede cambiar.
-const THEME_NAME = { light: "Claro", dark: "Oscuro", navidad: "§cNavidad" };
+// tema de los menus (claro u oscuro): se guarda en este equipo y se aplica antes de pintar nada. La Navidad va aparte, encima
+// del que tengas: solo para el staff hasta que el manifest ponga "tema_navidad": true (cuando salga el trailer); con
+// "obligatorio" sale para todos y no se puede quitar.
+const THEME_NAME = { light: "Claro", dark: "Oscuro" };
 function isDark() { return document.documentElement.dataset.theme === "dark"; }
-function applyTheme(name) {
-  document.documentElement.dataset.theme = name;
-  if (window.Snow) Snow.toggle(name === "navidad");
+function applyTheme(name) { document.documentElement.dataset.theme = name; }
+try { const t = localStorage.getItem("zeres-theme"); applyTheme(t === "dark" ? "dark" : "light"); } catch (_) { applyTheme("light"); }
+function canNavidad() { return staff.staff || temaNavidad; }
+function isNavidad() { return document.documentElement.dataset.navidad === "1"; }
+function applyNavidad(on) {
+  if (on) document.documentElement.dataset.navidad = "1";
+  else delete document.documentElement.dataset.navidad;
+  if (window.Snow) Snow.toggle(on);
 }
-try { const t = localStorage.getItem("zeres-theme"); applyTheme(t in THEME_NAME ? t : "light"); } catch (_) { applyTheme("light"); }
-function themes() { return staff.staff || temaNavidad ? ["light", "dark", "navidad"] : ["light", "dark"]; }
-function nextTheme() { const l = themes(); return l[(l.indexOf(document.documentElement.dataset.theme) + 1) % l.length]; }
-/** Si ya no puede usar Navidad (quitó el código de staff), vuelve al tema claro; si es obligatorio, se lo pone. */
+function navidadPref() { try { return localStorage.getItem("zeres-navidad") !== "0"; } catch (_) { return true; } }
+/** Pone o quita la Navidad según lo que pueda usar y lo que haya elegido; viene puesta salvo que la apague. */
 function checkTheme() {
-  const now = document.documentElement.dataset.theme;
-  if (temaNavidad === "obligatorio" && now !== "navidad") setTheme("navidad");
-  else if (now === "navidad" && !themes().includes("navidad")) setTheme("light");
+  const on = temaNavidad === "obligatorio" || (canNavidad() && navidadPref());
+  if (on !== isNavidad()) { applyNavidad(on); repaint(); }
+}
+function setNavidad(on) {
+  try { localStorage.setItem("zeres-navidad", on ? "1" : "0"); } catch (_) { }
+  checkTheme();
 }
 function setTheme(name) {
   applyTheme(name);
   try { localStorage.setItem("zeres-theme", name); } catch (_) { }
-  // el texto se pinta en canvas: hay que volver a dibujarlo con los colores del tema nuevo
+  repaint();
+}
+// el texto se pinta en canvas: hay que volver a dibujarlo con los colores del tema nuevo
+function repaint() {
   renderStatic(document);
   renderHome();
 }
@@ -454,7 +464,8 @@ function renderSettings() {
     h += staff.staff ? btn("Canal: " + (staff.channel === "dev" ? "§dDev" : "Beta"), "channel") : btn("Canal: Beta", "channel", "off");
     h += btn("Descargas a la vez: " + s.parallel, "dl");
     h += btn("Panorámica animada: " + yes(s.animated), "anim");
-    h += btn("Menús: " + THEME_NAME[document.documentElement.dataset.theme], "theme", temaNavidad === "obligatorio" ? "off" : "");
+    h += btn("Menús: " + THEME_NAME[document.documentElement.dataset.theme], "theme");
+    if (canNavidad()) h += btn("Navidad: " + (isNavidad() ? "§aSí" : "§cNo"), "navidad", temaNavidad === "obligatorio" ? "off" : "");
     h += btn("Abrir carpeta del launcher", "folder");
     h += btn("Buscar actualizaciones", "refresh", "wide");
     h += note("Origen de los modpacks", "7");
@@ -518,6 +529,7 @@ function renderSettings() {
   bindField("manField", "manInput", "manTxt", settings.manifest_url, 290, v => save({ manifest_url: v }));
   bindField("staffField", "staffInput", "staffTxt", "", 290, async v => {
     try { staff = await invoke("set_staff_code", { code: v }); } catch (e) { T("status", "§c" + MC.fit(String(e), 200)); return; }
+    checkTheme();
     const why = { sin_cuenta: "Inicia sesión en Perfil con tu cuenta antes de poner el código", sin_lista: "No se ha podido descargar la lista de staff: revisa la conexión",
       codigo: "Ese código no existe", cuenta: "Ese código es de otra cuenta: cambia de cuenta en Perfil", premium: "Ese código es para tu cuenta Microsoft (premium)" };
     T("status", staff.staff ? "§aCódigo de staff correcto · " + staff.name : v ? "§c" + (why[staff.reason] || "Ese código no vale para esta cuenta") : "§7Código de staff quitado");
@@ -533,7 +545,8 @@ async function settingAction(a) {
   if (a === "close") await save({ close_mode: (s.close_mode + 1) % 3 });
   if (a === "dl") await save({ parallel: s.parallel >= 16 ? 2 : s.parallel * 2 });
   if (a === "anim") await save({ animated: !s.animated });
-  if (a === "theme" && temaNavidad !== "obligatorio") setTheme(nextTheme());
+  if (a === "theme") setTheme(isDark() ? "light" : "dark");
+  if (a === "navidad" && temaNavidad !== "obligatorio") setNavidad(!isNavidad());
   if (a === "folder") invoke("open_folder", { id: null });
   if (a === "ifolder") invoke("open_folder", { id: current });
   if (a === "refresh") { await refreshInstances(true); }

@@ -15,29 +15,33 @@
   --btn1: #3a3e4a; --btn2: #30333c; --edge: #4a4f5c; --slot: #1f2128; --grey1: #282b32; --grey2: #33363f; --soft: #00000066;
   color-scheme: dark;
 }
-/* tema de Navidad: rojo, azul y un blanco suave de hielo, para que no deslumbre */
-:root[data-theme="navidad"] {
+/* Navidad: va encima del tema claro o del oscuro. Rojo, azul y un blanco suave de hielo, para que no deslumbre */
+:root[data-navidad] {
   --ink: #10203c; --red: #d92f39; --red1: #e8404a; --red2: #a8141f; --red-d: #7a0f18;
   --body1: #d9e6f4; --body2: #bfd3ea; --area: #dfe9f5; --line: #a3bbd8; --shadow: #93aac8;
   --card: #eef4fa; --card2: #e3ecf6; --locked: #cfdcec; --track: #bfd1e6; --txt: #1b2a45; --dim: #566b8a;
   --green1: #3d86e0; --green2: #1c5fb8; --green-d: #123f80; --gold1: #f5c84c; --gold2: #d39a18; --gold-d: #8a5e0c;
   --btn1: #f4f8fc; --btn2: #dbe6f3; --edge: #a3bbd8; --slot: #dfe9f5; --grey1: #cfdcec; --grey2: #bfd1e6; --soft: #0000001f;
-  color-scheme: light;
+}
+:root[data-navidad][data-theme="dark"] {
+  --ink: #0a1426; --body1: #16233a; --body2: #0f1a2e; --area: #1b2a44; --line: #2f4668; --shadow: #0a1220;
+  --card: #22344f; --card2: #1c2c45; --locked: #1a2840; --track: #2f4668; --txt: #e6f0fb; --dim: #93a9c6;
+  --btn1: #2f4668; --btn2: #263a58; --edge: #3e5a80; --slot: #16233a; --grey1: #1e2e48; --grey2: #2a3d5c; --soft: #00000066;
 }
 #snow { position: fixed; left: 0; top: 0; width: 1000px; height: 620px; pointer-events: none; z-index: 50; display: none; }
 .xmas-cap, .xmas-hat { display: none; }
-:root[data-theme="navidad"] #snow { display: block; }
-:root[data-theme="navidad"] .bar { box-shadow: inset 0 -8px 0 #15427f, inset 0 -9px 0 #f5c84c, inset 3px 3px 0 var(--ink), inset -3px 0 0 var(--ink); }
+:root[data-navidad] #snow { display: block; }
+:root[data-navidad] .bar { box-shadow: inset 0 -8px 0 #15427f, inset 0 -9px 0 #f5c84c, inset 3px 3px 0 var(--ink), inset -3px 0 0 var(--ink); }
 /* nieve acumulada sobre la cabecera */
-:root[data-theme="navidad"] .xmas-cap { display: block; position: absolute; left: 3px; right: 3px; top: 3px; height: 9px; pointer-events: none;
+:root[data-navidad] .xmas-cap { display: block; position: absolute; left: 3px; right: 3px; top: 3px; height: 9px; pointer-events: none;
   background: radial-gradient(circle at 12px -3px, #fff 11px, transparent 11.5px) 0 0 / 34px 9px repeat-x,
               radial-gradient(circle at 9px -5px, #fff 11px, transparent 11.5px) 17px 0 / 26px 9px repeat-x, linear-gradient(#fff 0 3px, transparent 3px); }
 /* gorro sobre el botón de la Poké Ball */
-:root[data-theme="navidad"] .xmas-hat { display: block; position: absolute; left: 50%; bottom: 15px; width: 30px; height: 20px; margin-left: -15px; pointer-events: none; z-index: 2;
+:root[data-navidad] .xmas-hat { display: block; position: absolute; left: 50%; bottom: 15px; width: 30px; height: 20px; margin-left: -15px; pointer-events: none; z-index: 2;
   background: linear-gradient(#fff, #fff) 0 100% / 30px 6px no-repeat, linear-gradient(120deg, transparent 30%, #e8404a 31%) 3px 0 / 13px 15px no-repeat, linear-gradient(240deg, transparent 30%, #c9262d 31%) 15px 0 / 12px 15px no-repeat; }
-:root[data-theme="navidad"] .xmas-hat::after { content: ""; position: absolute; right: -2px; top: -3px; width: 8px; height: 8px; border-radius: 50%; background: #fff; }
-:root[data-theme="navidad"] .scr { box-shadow: 0 0 0 2px var(--line), 0 3px 0 2px var(--soft), 0 -2px 0 2px #ffffff; }
-:root[data-theme="navidad"] .pano { filter: saturate(.85) brightness(1.04) hue-rotate(-6deg); }
+:root[data-navidad] .xmas-hat::after { content: ""; position: absolute; right: -2px; top: -3px; width: 8px; height: 8px; border-radius: 50%; background: #fff; }
+:root[data-navidad] .scr { box-shadow: 0 0 0 2px var(--line), 0 3px 0 2px var(--soft), 0 -2px 0 2px #ffffff; }
+:root[data-navidad] .pano { filter: saturate(.85) brightness(1.04) hue-rotate(-6deg); }
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
 html, body { width: 1000px; height: 620px; overflow: hidden; background: var(--ink); }

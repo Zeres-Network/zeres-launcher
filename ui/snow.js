@@ -1,4 +1,4 @@
-// Nieve del tema de Navidad: cuadraditos que caen por encima de la ventana sin tapar los clics.
+// Nieve de la Navidad: cuadraditos que caen por encima de la ventana sin tapar los clics.
 window.Snow = (() => {
   const c = () => document.getElementById("snow");
   const W = 1000, H = 620, flakes = [];
@@ -32,4 +32,4 @@ window.Snow = (() => {
     }
   };
 })();
-if (document.documentElement.dataset.theme === "navidad") Snow.toggle(true);
+if (document.documentElement.dataset.navidad === "1") Snow.toggle(true);
